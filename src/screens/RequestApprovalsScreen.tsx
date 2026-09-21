@@ -4,12 +4,13 @@ import { KpiCards } from '../components/KpiCards';
 import { FilterTabs, type FilterKey } from '../components/FilterTabs';
 import { RequestsGrid } from '../components/RequestsGrid';
 import { ReviewModal } from '../components/ReviewModal';
-import { fetchEmployees, fetchMatrixRows, fetchRequests, evaluateAndSyncRequests } from '../lib/dataSync';
+import { fetchSystemUsers, fetchMatrixRows, fetchRequests, evaluateAndSyncRequests } from '../lib/dataSync';
 import { buildRowViewModel, type RequestRowViewModel } from '../lib/rowViewModel';
 import { useCurrentUser } from '../lib/currentUser';
 import { leaveApproved, reject } from '../lib/decisionService';
 import { REQUEST_APPROVED, REQUEST_REJECTED } from '../lib/optionSets';
-import type { EmployeeLite } from '../lib/types';
+import { seedDiscountRequests, type RequestSeedProgress } from '../lib/seedRequestData';
+import type { SystemUserLite } from '../lib/types';
 
 interface RequestApprovalsScreenProps {
   onOutOfAuthorityCountChange: (count: number) => void;
@@ -24,19 +25,21 @@ export function RequestApprovalsScreen({ onOutOfAuthorityCountChange }: RequestA
   const [keyword, setKeyword] = useState('');
   const [selectedRow, setSelectedRow] = useState<RequestRowViewModel | null>(null);
   const [loadError, setLoadError] = useState('');
+  const [seeding, setSeeding] = useState(false);
+  const [seedProgress, setSeedProgress] = useState<RequestSeedProgress | null>(null);
 
   const load = useCallback(async () => {
     try {
       setLoadError('');
-      const [employees, matrixRows, requests] = await Promise.all([
-        fetchEmployees(),
+      const [systemUsers, matrixRows, requests] = await Promise.all([
+        fetchSystemUsers(),
         fetchMatrixRows(),
         fetchRequests(),
       ]);
-      const employeesById = new Map<string, EmployeeLite>(employees.map((e) => [e.hr_employeeid, e]));
-      const evaluated = await evaluateAndSyncRequests(requests, employees, matrixRows);
+      const systemUsersById = new Map<string, SystemUserLite>(systemUsers.map((u) => [u.systemuserid, u]));
+      const evaluated = await evaluateAndSyncRequests(requests, systemUsers, matrixRows);
       const viewModels = evaluated.map(({ request, evaluation }) =>
-        buildRowViewModel(request, evaluation, employeesById, currentUser?.systemUserId ?? null)
+        buildRowViewModel(request, evaluation, systemUsersById, currentUser?.systemUserId ?? null)
       );
       setRows(viewModels);
     } catch (e) {
@@ -55,6 +58,18 @@ export function RequestApprovalsScreen({ onOutOfAuthorityCountChange }: RequestA
   async function handleRefresh() {
     setRefreshing(true);
     await load();
+  }
+
+  async function handleSeed() {
+    setSeeding(true);
+    setSeedProgress(null);
+    try {
+      const result = await seedDiscountRequests(setSeedProgress);
+      setSeedProgress(result);
+      await load();
+    } finally {
+      setSeeding(false);
+    }
   }
 
   const counts = useMemo(() => {
@@ -124,6 +139,18 @@ export function RequestApprovalsScreen({ onOutOfAuthorityCountChange }: RequestA
         <div className="page-header">
           <h1>Discounts Authorization</h1>
           <p>Discount requests entered in DotCare, classified against the AHJ Discount Policy (Sec. 6.1).</p>
+        </div>
+
+        <div className="info-card">
+          <button type="button" onClick={handleSeed} disabled={seeding}>
+            {seeding ? 'Seeding…' : 'Seed Sample Requests (Dev)'}
+          </button>
+          {seedProgress && (
+            <p>
+              Seeded {seedProgress.done}/{seedProgress.total}
+              {seedProgress.failed.length > 0 && ` — ${seedProgress.failed.length} failed: ${seedProgress.failed.map((f) => f.name).join(', ')}`}
+            </p>
+          )}
         </div>
 
         {loadError && <div className="load-error">{loadError}</div>}

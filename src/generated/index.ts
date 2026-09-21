@@ -7,11 +7,9 @@
 export * as CommonModels from './models/CommonModels';
 export * as Dis_discountlimitmatrixesModel from './models/Dis_discountlimitmatrixesModel';
 export * as Dis_discountrequestsModel from './models/Dis_discountrequestsModel';
-export * as Hr_employeesModel from './models/Hr_employeesModel';
 export * as SystemusersModel from './models/SystemusersModel';
 
 // Services
 export * from './services/Dis_discountlimitmatrixesService';
 export * from './services/Dis_discountrequestsService';
-export * from './services/Hr_employeesService';
 export * from './services/SystemusersService';

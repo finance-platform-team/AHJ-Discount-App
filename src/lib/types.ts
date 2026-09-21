@@ -1,9 +1,7 @@
-export interface EmployeeLite {
-  hr_employeeid: string;
-  hr_numberofhrcode?: string;
-  hr_fullname?: string;
-  hr_positionname?: string;
-  _hr_user_value?: string;
+export interface SystemUserLite {
+  systemuserid: string;
+  fullname?: string;
+  title?: string;
 }
 
 export interface MatrixRowLite {
@@ -18,11 +16,11 @@ export interface MatrixRowLite {
   statuscode?: number;
 }
 
-export type EmployeeResolutionStatus = 'matched' | 'unmatched' | 'ambiguous';
+export type UserResolutionStatus = 'matched' | 'unmatched' | 'ambiguous';
 
-export interface EmployeeResolutionResult {
-  status: EmployeeResolutionStatus;
-  employee?: EmployeeLite;
+export interface UserResolutionResult {
+  status: UserResolutionStatus;
+  user?: SystemUserLite;
 }
 
 export type MatrixMatchTier = 'specific' | 'wildcard' | 'none';
@@ -34,7 +32,7 @@ export interface MatrixMatchResult {
 
 /** Computed fields this app derives for a discount request before it can be displayed/decided. */
 export interface EvaluatedRequestFields {
-  authorizedByEmployeeId?: string;
+  authorizedBySystemUserId?: string;
   authorizedByPosition: number;
   timeBlock?: number;
   matchedMatrixRuleId?: string;
@@ -44,4 +42,7 @@ export interface EvaluatedRequestFields {
   unmatchedEmployee: boolean;
   ambiguousEmployee: boolean;
   unmatchedService: boolean;
+  agentSystemUserId?: string;
+  unmatchedAgent: boolean;
+  ambiguousAgent: boolean;
 }

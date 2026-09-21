@@ -10,6 +10,7 @@ import {
   DEFAULT_POSITION_PA,
   TIME_BLOCK_WILDCARD,
 } from '../lib/optionSets';
+import { seedDiscountLimitMatrix, type SeedProgress } from '../lib/seedMatrixData';
 
 function cellValue(row: MatrixRowLite | undefined): string {
   if (!row) return '';
@@ -21,12 +22,31 @@ function cellValue(row: MatrixRowLite | undefined): string {
 export function DiscountMatricesScreen() {
   const [matrixRows, setMatrixRows] = useState<MatrixRowLite[]>([]);
   const [loading, setLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false);
+  const [seedProgress, setSeedProgress] = useState<SeedProgress | null>(null);
 
-  useEffect(() => {
+  const reload = () => {
+    setLoading(true);
     fetchMatrixRows()
       .then(setMatrixRows)
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    reload();
   }, []);
+
+  const handleSeed = async () => {
+    setSeeding(true);
+    setSeedProgress(null);
+    try {
+      const result = await seedDiscountLimitMatrix(setSeedProgress);
+      setSeedProgress(result);
+      reload();
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   const groupedRows = useMemo(() => {
     const key = (r: MatrixRowLite) => `${r.dis_servicelevel}|${r.dis_timeblock}|${r.dis_servicecategory}`;
@@ -85,6 +105,15 @@ export function DiscountMatricesScreen() {
 
         <div className="info-card">
           <h3>Discount Limit Matrix</h3>
+          <button type="button" onClick={handleSeed} disabled={seeding}>
+            {seeding ? 'Seeding…' : 'Seed Data (Dev)'}
+          </button>
+          {seedProgress && (
+            <p>
+              Seeded {seedProgress.done}/{seedProgress.total}
+              {seedProgress.failed.length > 0 && ` — ${seedProgress.failed.length} failed`}
+            </p>
+          )}
           {loading ? (
             <div className="loading">Loading matrix…</div>
           ) : (

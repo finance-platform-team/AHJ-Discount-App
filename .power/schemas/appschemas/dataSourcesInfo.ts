@@ -19,13 +19,6 @@ export const dataSourcesInfo = {
     "dataSourceType": "Dataverse",
     "apis": {}
   },
-  "hr_employees": {
-    "tableId": "",
-    "version": "",
-    "primaryKey": "hr_employeeid",
-    "dataSourceType": "Dataverse",
-    "apis": {}
-  },
   "systemusers": {
     "tableId": "",
     "version": "",

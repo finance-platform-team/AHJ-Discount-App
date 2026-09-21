@@ -1,9 +1,9 @@
 import { Dis_discountlimitmatrixesService } from '../generated/services/Dis_discountlimitmatrixesService';
 import { Dis_discountrequestsService } from '../generated/services/Dis_discountrequestsService';
-import { Hr_employeesService } from '../generated/services/Hr_employeesService';
+import { SystemusersService } from '../generated/services/SystemusersService';
 import type { Dis_discountrequests, Dis_discountrequestsBase } from '../generated/models/Dis_discountrequestsModel';
 import { evaluateRequest } from './evaluateRequest';
-import type { EmployeeLite, EvaluatedRequestFields, MatrixRowLite } from './types';
+import type { EvaluatedRequestFields, MatrixRowLite, SystemUserLite } from './types';
 import type { IGetAllOptions } from '../generated/models/CommonModels';
 
 async function fetchAll<T>(
@@ -20,17 +20,15 @@ async function fetchAll<T>(
   return all;
 }
 
-export async function fetchEmployees(): Promise<EmployeeLite[]> {
+export async function fetchSystemUsers(): Promise<SystemUserLite[]> {
   const records = await fetchAll(
-    (options) => Hr_employeesService.getAll(options),
-    { select: ['hr_employeeid', 'hr_numberofhrcode', 'hr_fullname', 'hr_positionname', 'hr_user'], maxPageSize: 5000 }
+    (options) => SystemusersService.getAll(options),
+    { select: ['systemuserid', 'fullname', 'title'], maxPageSize: 5000 }
   );
   return records.map((r) => ({
-    hr_employeeid: r.hr_employeeid,
-    hr_numberofhrcode: r.hr_numberofhrcode,
-    hr_fullname: r.hr_fullname,
-    hr_positionname: r.hr_positionname,
-    _hr_user_value: r._hr_user_value,
+    systemuserid: r.systemuserid,
+    fullname: r.fullname,
+    title: r.title,
   }));
 }
 
@@ -75,7 +73,7 @@ export interface EvaluatedRequest {
  */
 export async function evaluateAndSyncRequests(
   requests: Dis_discountrequests[],
-  employees: EmployeeLite[],
+  systemUsers: SystemUserLite[],
   matrixRows: MatrixRowLite[]
 ): Promise<EvaluatedRequest[]> {
   const results: EvaluatedRequest[] = [];
@@ -84,6 +82,7 @@ export async function evaluateAndSyncRequests(
     const evaluation = evaluateRequest(
       {
         dis_authorizedbynamedotcare: request.dis_authorizedbynamedotcare,
+        dis_agentdotcare: request.dis_agentdotcare,
         dis_actualcreatedon: request.dis_actualcreatedon,
         dis_servicelevel: request.dis_servicelevel,
         dis_servicecategory: request.dis_servicecategory,
@@ -91,19 +90,20 @@ export async function evaluateAndSyncRequests(
         dis_totaldiscountamount: request.dis_totaldiscountamount,
         dis_billtotal: request.dis_billtotal,
       },
-      employees,
+      systemUsers,
       matrixRows
     );
 
     if (!request.dis_decisionlocked) {
       const changed =
-        request._dis_authorizedbyname_value !== evaluation.authorizedByEmployeeId ||
+        request._dis_authorizedbyname_value !== evaluation.authorizedBySystemUserId ||
         request.dis_authorizedbyposition !== evaluation.authorizedByPosition ||
         request.dis_timeblock !== evaluation.timeBlock ||
         request._dis_matchedmatrixrule_value !== evaluation.matchedMatrixRuleId ||
         request.dis_authorizedlimit !== evaluation.authorizedLimit ||
         request.dis_overageaboveauthority !== evaluation.overageAboveAuthority ||
-        request.dis_authoritycheck !== evaluation.authorityCheck;
+        request.dis_authoritycheck !== evaluation.authorityCheck ||
+        request._dis_agent_value !== evaluation.agentSystemUserId;
 
       if (changed) {
         const update: Partial<Dis_discountrequestsBase> = {
@@ -113,11 +113,14 @@ export async function evaluateAndSyncRequests(
           dis_overageaboveauthority: evaluation.overageAboveAuthority,
           dis_authoritycheck: evaluation.authorityCheck as Dis_discountrequestsBase['dis_authoritycheck'],
         };
-        if (evaluation.authorizedByEmployeeId) {
-          update['dis_AuthorizedByName@odata.bind'] = `/hr_employees(${evaluation.authorizedByEmployeeId})`;
+        if (evaluation.authorizedBySystemUserId) {
+          update['dis_AuthorizedByName@odata.bind'] = `/systemusers(${evaluation.authorizedBySystemUserId})`;
         }
         if (evaluation.matchedMatrixRuleId) {
           update['dis_MatchedMatrixRule@odata.bind'] = `/dis_discountlimitmatrixes(${evaluation.matchedMatrixRuleId})`;
+        }
+        if (evaluation.agentSystemUserId) {
+          update['dis_Agent@odata.bind'] = `/systemusers(${evaluation.agentSystemUserId})`;
         }
         await Dis_discountrequestsService.update(request.dis_discountrequestid, update);
       }

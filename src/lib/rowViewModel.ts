@@ -1,5 +1,5 @@
 import type { Dis_discountrequests } from '../generated/models/Dis_discountrequestsModel';
-import type { EmployeeLite, EvaluatedRequestFields } from './types';
+import type { EvaluatedRequestFields, SystemUserLite } from './types';
 import { positionAbbr, serviceCategoryLabel, serviceLevelLabel, timeBlockLabel, AUTHORITY_OUT } from './optionSets';
 
 export interface RequestRowViewModel {
@@ -32,20 +32,22 @@ export interface RequestRowViewModel {
 export function buildRowViewModel(
   request: Dis_discountrequests,
   evaluation: EvaluatedRequestFields,
-  employeesById: Map<string, EmployeeLite>,
+  systemUsersById: Map<string, SystemUserLite>,
   currentUserSystemUserId: string | null
 ): RequestRowViewModel {
-  const employee = evaluation.authorizedByEmployeeId ? employeesById.get(evaluation.authorizedByEmployeeId) : undefined;
+  const user = evaluation.authorizedBySystemUserId ? systemUsersById.get(evaluation.authorizedBySystemUserId) : undefined;
 
-  const authorizedByDisplay = employee
-    ? `${employee.hr_fullname?.trim().replace(/\s+/g, ' ') ?? ''} (${positionAbbr(evaluation.authorizedByPosition)})`
+  const authorizedByDisplay = user
+    ? `${user.fullname?.trim().replace(/\s+/g, ' ') ?? ''} (${positionAbbr(evaluation.authorizedByPosition)})`
     : request.dis_authorizedbynamedotcare ?? '';
+
+  const agent = evaluation.agentSystemUserId ? systemUsersById.get(evaluation.agentSystemUserId) : undefined;
+  const agentName = agent?.fullname?.trim().replace(/\s+/g, ' ') || request.dis_agentname || request.dis_agentdotcare || '';
 
   const isOutOfYourAuthority =
     !!currentUserSystemUserId &&
     evaluation.authorityCheck === AUTHORITY_OUT &&
-    !!employee?._hr_user_value &&
-    employee._hr_user_value === currentUserSystemUserId;
+    evaluation.authorizedBySystemUserId === currentUserSystemUserId;
 
   return {
     id: request.dis_discountrequestid,
@@ -65,7 +67,7 @@ export function buildRowViewModel(
     overageAboveAuthority: evaluation.overageAboveAuthority,
     isOutOfAuthority: evaluation.authorityCheck === AUTHORITY_OUT,
     authorizedByDisplay,
-    agentName: request.dis_agentname ?? '',
+    agentName,
     reason: request.dis_reason ?? '',
     note: request.dis_note ?? '',
     requestStatus: request.dis_requeststatus,

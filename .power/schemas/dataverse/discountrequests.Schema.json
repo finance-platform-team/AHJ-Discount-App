@@ -86,6 +86,14 @@
           "x-ms-dataverse-type": "LookupType",
           "x-ms-schema-name": "dis_Agent"
         },
+        "dis_agentdotcare": {
+          "type": "string",
+          "title": "Agent (Dotcare)",
+          "x-ms-dataverse-attribute": "dis_agentdotcare",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "dis_AgentDotcare",
+          "maxLength": 250
+        },
         "dis_agentname": {
           "type": "string",
           "title": "dis_agentname",
@@ -137,7 +145,7 @@
         },
         "dis_authorizedbyname": {
           "type": "string",
-          "title": "Authorized By Name ",
+          "title": "Authorized By Name",
           "x-ms-dataverse-attribute": "dis_authorizedbyname",
           "x-ms-dataverse-type": "LookupType",
           "x-ms-schema-name": "dis_AuthorizedByName"
@@ -157,7 +165,16 @@
           "x-ms-dataverse-type": "StringType",
           "x-ms-schema-name": "dis_AuthorizedByNameName",
           "x-ms-read-only": true,
-          "maxLength": 850
+          "maxLength": 200
+        },
+        "dis_authorizedbynameyominame": {
+          "type": "string",
+          "title": "dis_authorizedbynameyominame",
+          "x-ms-dataverse-attribute": "dis_authorizedbynameyominame",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "dis_AuthorizedByNameYomiName",
+          "x-ms-read-only": true,
+          "maxLength": 200
         },
         "dis_authorizedbyposition": {
           "type": "string",

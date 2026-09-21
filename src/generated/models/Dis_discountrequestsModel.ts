@@ -66,6 +66,7 @@ export type Dis_discountrequestsstatuscode = keyof typeof Dis_discountrequestsst
 export interface Dis_discountrequestsBase {
   dis_actualcreatedon?: string;
   "dis_Agent@odata.bind"?: string;
+  dis_agentdotcare?: string;
   dis_authoritycheck?: Dis_discountrequestsdis_authoritycheck;
   "dis_AuthorizedByName@odata.bind"?: string;
   dis_authorizedbynamedotcare?: string;
@@ -110,6 +111,7 @@ export interface Dis_discountrequests extends Dis_discountrequestsBase {
   dis_agentyominame?: string;
   dis_authoritycheckname?: string;
   dis_authorizedbynamename?: string;
+  dis_authorizedbynameyominame?: string;
   dis_authorizedbypositionname?: string;
   dis_decidedbyname?: string;
   dis_decidedbyyominame?: string;

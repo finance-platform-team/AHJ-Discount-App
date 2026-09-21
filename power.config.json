@@ -24,11 +24,6 @@
           "logicalName": "dis_discountrequest",
           "isHidden": false
         },
-        "employees": {
-          "entitySetName": "hr_employees",
-          "logicalName": "hr_employee",
-          "isHidden": false
-        },
         "users": {
           "entitySetName": "systemusers",
           "logicalName": "systemuser",

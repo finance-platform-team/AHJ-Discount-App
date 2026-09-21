@@ -1,12 +1,13 @@
-import { resolveAuthorizedBy } from './employeeResolution';
-import { derivePosition } from './positionDerivation';
+import { resolveClosestUser } from './userResolution';
+import { derivePositionFromTitle } from './positionDerivation';
 import { deriveTimeBlock } from './timeBlock';
 import { findMatrixRule } from './matrixLookup';
 import { AUTHORITY_OUT, AUTHORITY_WITHIN, DEFAULT_POSITION_PA } from './optionSets';
-import type { EmployeeLite, EvaluatedRequestFields, MatrixRowLite } from './types';
+import type { EvaluatedRequestFields, MatrixRowLite, SystemUserLite } from './types';
 
 export interface RequestInputForEvaluation {
   dis_authorizedbynamedotcare?: string;
+  dis_agentdotcare?: string;
   dis_actualcreatedon?: string;
   dis_servicelevel?: number;
   /** dis_servicecategory is a multi-select choice in the live schema; a request carries one true category. */
@@ -18,12 +19,13 @@ export interface RequestInputForEvaluation {
 
 export function evaluateRequest(
   request: RequestInputForEvaluation,
-  employees: EmployeeLite[],
+  systemUsers: SystemUserLite[],
   matrixRows: MatrixRowLite[]
 ): EvaluatedRequestFields {
-  const resolution = resolveAuthorizedBy(request.dis_authorizedbynamedotcare, employees);
-  const authorizedByPosition = derivePosition(resolution.employee?.hr_positionname);
+  const resolution = resolveClosestUser(request.dis_authorizedbynamedotcare, systemUsers);
+  const authorizedByPosition = derivePositionFromTitle(resolution.user?.title);
   const timeBlockFromClock = deriveTimeBlock(request.dis_actualcreatedon);
+  const agentResolution = resolveClosestUser(request.dis_agentdotcare, systemUsers);
 
   const serviceCategory = request.dis_servicecategory?.[0];
   const unmatchedService = serviceCategory == null;
@@ -67,7 +69,7 @@ export function evaluateRequest(
   }
 
   return {
-    authorizedByEmployeeId: resolution.employee?.hr_employeeid,
+    authorizedBySystemUserId: resolution.user?.systemuserid,
     authorizedByPosition: authorizedByPosition ?? DEFAULT_POSITION_PA,
     timeBlock: matchedRow ? matchedRow.dis_timeblock : timeBlockFromClock,
     matchedMatrixRuleId: matchedRow?.dis_discountlimitmatrixid,
@@ -77,5 +79,8 @@ export function evaluateRequest(
     unmatchedEmployee: resolution.status === 'unmatched',
     ambiguousEmployee: resolution.status === 'ambiguous',
     unmatchedService,
+    agentSystemUserId: agentResolution.user?.systemuserid,
+    unmatchedAgent: agentResolution.status === 'unmatched',
+    ambiguousAgent: agentResolution.status === 'ambiguous',
   };
 }
