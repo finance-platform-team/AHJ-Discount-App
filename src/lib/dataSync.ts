@@ -71,12 +71,27 @@ export interface EvaluatedRequest {
  * stale prior evaluation) — unless the request is already decision-locked, since BRL-013 forbids
  * touching a locked record's fields at all.
  */
+/** Caps concurrent Dataverse update calls so a large batch doesn't slam the API all at once. */
+const UPDATE_CONCURRENCY = 8;
+
+async function runWithConcurrency<T>(tasks: (() => Promise<T>)[], limit: number): Promise<void> {
+  let next = 0;
+  async function worker() {
+    while (next < tasks.length) {
+      const task = tasks[next++];
+      await task();
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, tasks.length) }, worker));
+}
+
 export async function evaluateAndSyncRequests(
   requests: Dis_discountrequests[],
   systemUsers: SystemUserLite[],
   matrixRows: MatrixRowLite[]
 ): Promise<EvaluatedRequest[]> {
   const results: EvaluatedRequest[] = [];
+  const updateTasks: (() => Promise<void>)[] = [];
 
   for (const request of requests) {
     const evaluation = evaluateRequest(
@@ -122,12 +137,16 @@ export async function evaluateAndSyncRequests(
         if (evaluation.agentSystemUserId) {
           update['dis_Agent@odata.bind'] = `/systemusers(${evaluation.agentSystemUserId})`;
         }
-        await Dis_discountrequestsService.update(request.dis_discountrequestid, update);
+        updateTasks.push(async () => {
+          await Dis_discountrequestsService.update(request.dis_discountrequestid, update);
+        });
       }
     }
 
     results.push({ request, evaluation });
   }
+
+  await runWithConcurrency(updateTasks, UPDATE_CONCURRENCY);
 
   return results;
 }

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { TopBar } from '../components/TopBar';
 import { fetchMatrixRows } from '../lib/dataSync';
 import type { MatrixRowLite } from '../lib/types';
 import {
@@ -80,10 +79,8 @@ export function DiscountMatricesScreen() {
 
   return (
     <div className="screen">
-      <TopBar showCommandBar={false} onRefresh={() => {}} refreshing={false} />
       <div className="screen-body">
         <div className="page-header">
-          <h1>Discount Limit Matrices</h1>
           <p>AHJ Discount Policy — Section 6.1 (transcribed from the source policy document).</p>
         </div>
 

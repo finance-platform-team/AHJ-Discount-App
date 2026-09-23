@@ -8,7 +8,7 @@ interface KpiCardsProps {
 export function KpiCards({ total, outOfYourAuthority, approved, rejected }: KpiCardsProps) {
   const cards = [
     { label: 'TOTAL REQUESTS', value: total, caption: 'from DotCare today' },
-    { label: 'OUT OF YOUR AUTHORITY', value: outOfYourAuthority, caption: 'exceeds authorized-by limit' },
+    { label: 'OUT OF YOUR AUTHORITY', value: outOfYourAuthority, caption: 'authorized by you, exceeds your limit' },
     { label: 'APPROVED', value: approved, caption: 'approved by default' },
     { label: 'REJECTED', value: rejected, caption: 'rejected with justification' },
   ];
