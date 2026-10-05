@@ -1,7 +1,9 @@
 import { Dis_discountlimitmatrixesService } from '../generated/services/Dis_discountlimitmatrixesService';
+import { fetchMatrixRows } from './dataSync';
 import {
   SERVICE_LEVEL,
   SERVICE_CATEGORY,
+  SERVICE_CATEGORY_CODE,
   TIME_BLOCK,
   POSITION_ENTRIES,
   type PositionCode,
@@ -34,35 +36,21 @@ const BLOCK = {
   Evening: 776940003, // 5:00 PM-8:00 PM
 } as const;
 
-const CAT = {
-  Packages: 776940000,
-  RADService: 776940001,
-  LABService: 776940002,
-  Procedure: 776940003,
-  Dental: 776940004,
-  HomeCare: 776940005,
-  Mortality: 776940006,
-  DAMA: 776940007,
-  Medications: 776940008,
-} as const;
+const CAT = SERVICE_CATEGORY_CODE;
 
 // Outpatient's block-time phase rows are folded into the Outpatient service level
 // (per user request), differentiated only by dis_timeblock.
-// "Consultation" -> Procedure, "Lab & Rad" -> split into RADService + LAB Service
-// (duplicated values), both confirmed with the user.
 const GROUPS: MatrixGroup[] = [
   { level: LEVEL.Inpatient, timeblock: BLOCK.NotRestricted, category: CAT.Mortality, label: 'Inpatient Mortality',
     values: ['inf', 50, 40, 30, 30, 'none', 'none', 'none', 'none', 'none', 'none', 'none'] },
-  { level: LEVEL.Inpatient, timeblock: BLOCK.NotRestricted, category: CAT.Packages, label: 'Inpatient OR Packages',
+  { level: LEVEL.Inpatient, timeblock: BLOCK.NotRestricted, category: CAT.ORPackages, label: 'Inpatient OR Packages',
     values: ['inf', 50, 35, 25, 25, 30, 'none', 'none', 'none', 25, 25, 10] },
   { level: LEVEL.Inpatient, timeblock: BLOCK.NotRestricted, category: CAT.DAMA, label: 'Inpatient DAMA',
-    values: ['inf', 50, 40, 30, 30, 'none', 'none', 'none', 30, 30, 'none', 'none'] },
+    values: ['inf', 50, 40, 30, 30, 'none', 'none', 'none', 'none', 30, 30, 'none'] },
 
-  { level: LEVEL.Outpatient, timeblock: BLOCK.NotRestricted, category: CAT.Procedure, label: 'Outpatient Consultation',
+  { level: LEVEL.Outpatient, timeblock: BLOCK.NotRestricted, category: CAT.Consultation, label: 'Outpatient Consultation',
     values: ['inf', 50, 40, 30, 30, 30, 'none', 30, 'none', 15, 30, 10] },
-  { level: LEVEL.Outpatient, timeblock: BLOCK.NotRestricted, category: CAT.RADService, label: 'Outpatient Lab & Rad (RAD)',
-    values: ['inf', 50, 40, 30, 30, 30, 'none', 30, 'none', 15, 30, 10] },
-  { level: LEVEL.Outpatient, timeblock: BLOCK.NotRestricted, category: CAT.LABService, label: 'Outpatient Lab & Rad (LAB)',
+  { level: LEVEL.Outpatient, timeblock: BLOCK.NotRestricted, category: CAT.LabAndRad, label: 'Outpatient Lab & Rad',
     values: ['inf', 50, 40, 30, 30, 30, 'none', 30, 'none', 15, 30, 10] },
   { level: LEVEL.Outpatient, timeblock: BLOCK.NotRestricted, category: CAT.Dental, label: 'Outpatient Dental without Prosthesis',
     values: ['inf', 50, 40, 30, 30, 30, 'none', 30, 'none', 15, 30, 10] },
@@ -71,32 +59,24 @@ const GROUPS: MatrixGroup[] = [
   { level: LEVEL.Outpatient, timeblock: BLOCK.NotRestricted, category: CAT.Medications, label: 'Outpatient Medications',
     values: ['inf', 50, 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none'] },
 
-  { level: LEVEL.Outpatient, timeblock: BLOCK.Morning, category: CAT.Procedure, label: 'Outpatient 9AM-1PM Consultation',
+  { level: LEVEL.Outpatient, timeblock: BLOCK.Morning, category: CAT.Consultation, label: 'Outpatient 9AM-1PM Consultation',
     values: ['inf', 50, 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 30] },
-  { level: LEVEL.Outpatient, timeblock: BLOCK.Morning, category: CAT.RADService, label: 'Outpatient 9AM-1PM Lab & Rad (RAD)',
-    values: ['inf', 50, 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 20] },
-  { level: LEVEL.Outpatient, timeblock: BLOCK.Morning, category: CAT.LABService, label: 'Outpatient 9AM-1PM Lab & Rad (LAB)',
+  { level: LEVEL.Outpatient, timeblock: BLOCK.Morning, category: CAT.LabAndRad, label: 'Outpatient 9AM-1PM Lab & Rad',
     values: ['inf', 50, 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 20] },
 
-  { level: LEVEL.Outpatient, timeblock: BLOCK.Afternoon, category: CAT.Procedure, label: 'Outpatient 1PM-5PM Consultation',
+  { level: LEVEL.Outpatient, timeblock: BLOCK.Afternoon, category: CAT.Consultation, label: 'Outpatient 1PM-5PM Consultation',
     values: ['inf', 50, 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 50] },
-  { level: LEVEL.Outpatient, timeblock: BLOCK.Afternoon, category: CAT.RADService, label: 'Outpatient 1PM-5PM Lab & Rad (RAD)',
-    values: ['inf', 50, 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 30] },
-  { level: LEVEL.Outpatient, timeblock: BLOCK.Afternoon, category: CAT.LABService, label: 'Outpatient 1PM-5PM Lab & Rad (LAB)',
+  { level: LEVEL.Outpatient, timeblock: BLOCK.Afternoon, category: CAT.LabAndRad, label: 'Outpatient 1PM-5PM Lab & Rad',
     values: ['inf', 50, 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 30] },
 
-  { level: LEVEL.Outpatient, timeblock: BLOCK.Evening, category: CAT.Procedure, label: 'Outpatient 5PM-8PM Consultation',
+  { level: LEVEL.Outpatient, timeblock: BLOCK.Evening, category: CAT.Consultation, label: 'Outpatient 5PM-8PM Consultation',
     values: ['inf', 50, 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none'] },
-  { level: LEVEL.Outpatient, timeblock: BLOCK.Evening, category: CAT.RADService, label: 'Outpatient 5PM-8PM Lab & Rad (RAD)',
-    values: ['inf', 50, 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none'] },
-  { level: LEVEL.Outpatient, timeblock: BLOCK.Evening, category: CAT.LABService, label: 'Outpatient 5PM-8PM Lab & Rad (LAB)',
+  { level: LEVEL.Outpatient, timeblock: BLOCK.Evening, category: CAT.LabAndRad, label: 'Outpatient 5PM-8PM Lab & Rad',
     values: ['inf', 50, 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none'] },
 
-  { level: LEVEL.ER, timeblock: BLOCK.NotRestricted, category: CAT.Procedure, label: 'ER Consultation',
+  { level: LEVEL.ER, timeblock: BLOCK.NotRestricted, category: CAT.Consultation, label: 'ER Consultation',
     values: ['inf', 50, 40, 30, 30, 'none', 30, 'none', 'none', 30, 30, 10] },
-  { level: LEVEL.ER, timeblock: BLOCK.NotRestricted, category: CAT.RADService, label: 'ER Lab & Rad (RAD)',
-    values: ['inf', 50, 40, 30, 30, 'none', 30, 'none', 'none', 30, 30, 10] },
-  { level: LEVEL.ER, timeblock: BLOCK.NotRestricted, category: CAT.LABService, label: 'ER Lab & Rad (LAB)',
+  { level: LEVEL.ER, timeblock: BLOCK.NotRestricted, category: CAT.LabAndRad, label: 'ER Lab & Rad',
     values: ['inf', 50, 40, 30, 30, 'none', 30, 'none', 'none', 30, 30, 10] },
   { level: LEVEL.ER, timeblock: BLOCK.NotRestricted, category: CAT.DAMA, label: 'ER DAMA',
     values: ['inf', 50, 40, 30, 30, 'none', 30, 'none', 'none', 30, 30, 'none'] },
@@ -108,34 +88,64 @@ export interface SeedProgress {
   failed: { name: string; error: string }[];
 }
 
+/** Every matrix record the seed writes (one per group × position), as plain data. */
+export function buildMatrixRecords() {
+  return GROUPS.flatMap((group) =>
+    POSITION_ORDER.map((position, i) => {
+      const cell = group.values[i];
+      return {
+        dis_name: `${group.label} - ${POSITION_ENTRIES[i].abbr}`,
+        dis_servicelevel: group.level,
+        dis_timeblock: group.timeblock,
+        dis_servicecategory: group.category,
+        dis_position: position,
+        dis_isunlimited: cell === 'inf',
+        dis_hasauthority: cell !== 'none',
+        dis_authorizedlimitpercent: typeof cell === 'number' ? cell : undefined,
+        statecode: 0 as const,
+      };
+    })
+  );
+}
+
 export async function seedDiscountLimitMatrix(
   onProgress?: (p: SeedProgress) => void
 ): Promise<SeedProgress> {
-  const progress: SeedProgress = { total: GROUPS.length * POSITION_ORDER.length, done: 0, failed: [] };
+  const records = buildMatrixRecords();
+  const progress: SeedProgress = { total: records.length, done: 0, failed: [] };
 
-  for (const group of GROUPS) {
-    for (let i = 0; i < POSITION_ORDER.length; i++) {
-      const position = POSITION_ORDER[i];
-      const cell = group.values[i];
-      const name = `${group.label} - ${POSITION_ENTRIES[i].abbr}`;
-      try {
-        await Dis_discountlimitmatrixesService.create({
-          dis_name: name,
-          dis_servicelevel: group.level,
-          dis_timeblock: group.timeblock,
-          dis_servicecategory: group.category,
-          dis_position: position,
-          dis_isunlimited: cell === 'inf',
-          dis_hasauthority: cell !== 'none',
-          dis_authorizedlimitpercent: typeof cell === 'number' ? cell : undefined,
-          statecode: 0,
-        });
-      } catch (err) {
-        progress.failed.push({ name, error: err instanceof Error ? err.message : String(err) });
-      }
-      progress.done++;
-      onProgress?.({ ...progress });
+  for (const record of records) {
+    try {
+      await Dis_discountlimitmatrixesService.create(record);
+    } catch (err) {
+      progress.failed.push({ name: record.dis_name, error: err instanceof Error ? err.message : String(err) });
     }
+    progress.done++;
+    onProgress?.({ ...progress });
+  }
+
+  return progress;
+}
+
+/** Dev tooling: permanently deletes every discount limit matrix record, reporting progress per record. */
+export async function deleteAllDiscountLimitMatrixRows(
+  onProgress?: (p: SeedProgress) => void
+): Promise<SeedProgress> {
+  const rows = await fetchMatrixRows();
+  const progress: SeedProgress = { total: rows.length, done: 0, failed: [] };
+  onProgress?.({ ...progress });
+
+  for (const row of rows) {
+    try {
+      await Dis_discountlimitmatrixesService.delete(row.dis_discountlimitmatrixid);
+    } catch (err) {
+      progress.failed.push({
+        name: row.dis_discountlimitmatrixid,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+    progress.done++;
+    onProgress?.({ ...progress });
   }
 
   return progress;

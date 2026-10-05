@@ -1,4 +1,5 @@
 import { Dis_discountrequestsService } from '../generated/services/Dis_discountrequestsService';
+import type { Dis_discountrequestsBase } from '../generated/models/Dis_discountrequestsModel';
 import { REQUEST_APPROVED, REQUEST_REJECTED } from './optionSets';
 
 export class DecisionLockedError extends Error {
@@ -15,14 +16,23 @@ async function assertNotLocked(requestId: string): Promise<void> {
   }
 }
 
-export async function leaveApproved(requestId: string, decidedBySystemUserId: string): Promise<void> {
+/** Writes a final decision and locks the record so it can never be decided (or re-evaluated) again. */
+async function recordDecision(
+  requestId: string,
+  decidedBySystemUserId: string,
+  fields: Partial<Dis_discountrequestsBase>
+): Promise<void> {
   await assertNotLocked(requestId);
   await Dis_discountrequestsService.update(requestId, {
-    dis_requeststatus: REQUEST_APPROVED,
+    ...fields,
     dis_decisiondate: new Date().toISOString(),
     dis_decisionlocked: true,
     'dis_DecidedBy@odata.bind': `/systemusers(${decidedBySystemUserId})`,
   });
+}
+
+export function leaveApproved(requestId: string, decidedBySystemUserId: string): Promise<void> {
+  return recordDecision(requestId, decidedBySystemUserId, { dis_requeststatus: REQUEST_APPROVED });
 }
 
 export async function reject(
@@ -30,15 +40,12 @@ export async function reject(
   decidedBySystemUserId: string,
   decisionComment: string
 ): Promise<void> {
-  if (!decisionComment.trim()) {
+  const comment = decisionComment.trim();
+  if (!comment) {
     throw new Error('A justification is required to reject a request.');
   }
-  await assertNotLocked(requestId);
-  await Dis_discountrequestsService.update(requestId, {
+  await recordDecision(requestId, decidedBySystemUserId, {
     dis_requeststatus: REQUEST_REJECTED,
-    dis_decisioncomment: decisionComment.trim(),
-    dis_decisiondate: new Date().toISOString(),
-    dis_decisionlocked: true,
-    'dis_DecidedBy@odata.bind': `/systemusers(${decidedBySystemUserId})`,
+    dis_decisioncomment: comment,
   });
 }

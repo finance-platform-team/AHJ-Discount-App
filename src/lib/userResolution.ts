@@ -16,6 +16,19 @@ function nameTokens(value: string | null | undefined): string[] {
   return normalized ? normalized.split(' ') : [];
 }
 
+// Every request resolves two names against the full systemuser list, so each user's tokens are
+// computed once per user object rather than once per comparison.
+const userTokenCache = new WeakMap<SystemUserLite, string[]>();
+
+function userNameTokens(user: SystemUserLite): string[] {
+  let tokens = userTokenCache.get(user);
+  if (!tokens) {
+    tokens = nameTokens(user.fullname);
+    userTokenCache.set(user, tokens);
+  }
+  return tokens;
+}
+
 /**
  * Resolves a DotCare free-text name (Authorized By, Agent, ...) to the closest systemuser by
  * full-name token overlap (no exact-match requirement, since DotCare's spelling/ordering/
@@ -35,9 +48,7 @@ export function resolveClosestUser(
   let bestUsers: SystemUserLite[] = [];
 
   for (const user of users) {
-    const tokens = nameTokens(user.fullname);
-    if (tokens.length === 0) continue;
-    const overlap = tokens.filter((t) => rawTokens.has(t)).length;
+    const overlap = userNameTokens(user).filter((t) => rawTokens.has(t)).length;
     if (overlap === 0) continue;
     if (overlap > bestScore) {
       bestScore = overlap;

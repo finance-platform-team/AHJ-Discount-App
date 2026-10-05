@@ -1,26 +1,8 @@
-import type {
-  Dis_discountrequestsdis_servicecategory,
-  Dis_discountrequestsdis_servicelevel,
-} from '../generated/models/Dis_discountrequestsModel';
-import { SERVICE_CATEGORY, SERVICE_LEVEL } from '../lib/optionSets';
+import { cx } from '../lib/classNames';
+import { SERVICE_CATEGORY, SERVICE_LEVEL, toSelectOptions } from '../lib/optionSets';
+import type { ServiceCategoryFilter, ServiceLevelFilter, StatusFilter } from '../lib/requestFilters';
 
-export type FilterKey = 'all' | 'outOfAuthority' | 'withinAuthority' | 'approved' | 'rejected';
-
-interface FilterTabsProps {
-  active: FilterKey;
-  onChange: (key: FilterKey) => void;
-  counts: Record<FilterKey, number>;
-  keyword: string;
-  onKeywordChange: (value: string) => void;
-  serviceLevel: Dis_discountrequestsdis_servicelevel | 'all';
-  onServiceLevelChange: (value: Dis_discountrequestsdis_servicelevel | 'all') => void;
-  serviceCategory: Dis_discountrequestsdis_servicecategory | 'all';
-  onServiceCategoryChange: (value: Dis_discountrequestsdis_servicecategory | 'all') => void;
-  onRefresh?: () => void;
-  refreshing?: boolean;
-}
-
-const TABS: { key: FilterKey; label: string }[] = [
+const TABS: { key: StatusFilter; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'outOfAuthority', label: 'Out of Authority' },
   { key: 'withinAuthority', label: 'Within Authority' },
@@ -28,89 +10,125 @@ const TABS: { key: FilterKey; label: string }[] = [
   { key: 'rejected', label: 'Rejected' },
 ];
 
-const SERVICE_LEVEL_OPTIONS = Object.entries(SERVICE_LEVEL).map(([value, label]) => ({
-  value: Number(value) as Dis_discountrequestsdis_servicelevel,
-  label,
-}));
-const SERVICE_CATEGORY_OPTIONS = Object.entries(SERVICE_CATEGORY).map(([value, label]) => ({
-  value: Number(value) as Dis_discountrequestsdis_servicecategory,
-  label,
-}));
+const SERVICE_LEVEL_OPTIONS = toSelectOptions(SERVICE_LEVEL);
+const SERVICE_CATEGORY_OPTIONS = toSelectOptions(SERVICE_CATEGORY);
 
-export function FilterTabs({
-  active,
-  onChange,
-  counts,
+interface FilterTabsProps {
+  active: StatusFilter;
+  onChange: (key: StatusFilter) => void;
+  counts: Record<StatusFilter, number>;
+}
+
+export function FilterTabs({ active, onChange, counts }: FilterTabsProps) {
+  return (
+    <div className="filter-tabs" role="tablist" aria-label="Filter requests by status">
+      {TABS.map((tab) => (
+        <button
+          key={tab.key}
+          type="button"
+          role="tab"
+          aria-selected={active === tab.key}
+          className={cx(
+            'filter-tab',
+            active === tab.key && 'active',
+            tab.key === 'outOfAuthority' && counts.outOfAuthority > 0 && 'filter-tab-alert'
+          )}
+          onClick={() => onChange(tab.key)}
+        >
+          {tab.label}
+          <span className="filter-count">{counts[tab.key]}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+interface OptionFilterSelectProps<T extends number> {
+  label: string;
+  allLabel: string;
+  options: { value: T; label: string }[];
+  value: T | 'all';
+  onChange: (value: T | 'all') => void;
+}
+
+/** A `<select>` over an option set with a leading "all" entry. */
+function OptionFilterSelect<T extends number>({ label, allLabel, options, value, onChange }: OptionFilterSelectProps<T>) {
+  return (
+    <select
+      className="filter-select"
+      aria-label={label}
+      value={value}
+      onChange={(e) => onChange(e.target.value === 'all' ? 'all' : (Number(e.target.value) as T))}
+    >
+      <option value="all">{allLabel}</option>
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+interface FilterToolbarProps {
+  keyword: string;
+  onKeywordChange: (value: string) => void;
+  serviceLevel: ServiceLevelFilter;
+  onServiceLevelChange: (value: ServiceLevelFilter) => void;
+  serviceCategory: ServiceCategoryFilter;
+  onServiceCategoryChange: (value: ServiceCategoryFilter) => void;
+  shownCount: number;
+  totalCount: number;
+  onRefresh?: () => void;
+}
+
+export function FilterToolbar({
   keyword,
   onKeywordChange,
   serviceLevel,
   onServiceLevelChange,
   serviceCategory,
   onServiceCategoryChange,
+  shownCount,
+  totalCount,
   onRefresh,
-  refreshing,
-}: FilterTabsProps) {
+}: FilterToolbarProps) {
   return (
-    <div className="filter-row">
-      <div className="filter-tabs">
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            className={`filter-tab ${active === tab.key ? 'active' : ''}`}
-            onClick={() => onChange(tab.key)}
-          >
-            {tab.label}
-            <span className="filter-count">{counts[tab.key]}</span>
-          </button>
-        ))}
-      </div>
-      <div className="filter-actions">
+    <div className="grid-toolbar">
+      <div className="filter-search-wrap">
+        <svg className="filter-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+          <path d="M20 20l-3.5-3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
         <input
           className="filter-search"
-          placeholder="Filter by keyword"
+          placeholder="Search patient, ID, service, staff…"
+          aria-label="Filter by keyword"
           value={keyword}
           onChange={(e) => onKeywordChange(e.target.value)}
         />
-        <div className="filter-group">
-          <select
-            className="filter-select"
-            aria-label="Filter by Service Level"
-            value={serviceLevel}
-            onChange={(e) =>
-              onServiceLevelChange(
-                e.target.value === 'all' ? 'all' : (Number(e.target.value) as Dis_discountrequestsdis_servicelevel)
-              )
-            }
-          >
-            <option value="all">All Service Levels</option>
-            {SERVICE_LEVEL_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <select
-            className="filter-select"
-            aria-label="Filter by Service Category"
-            value={serviceCategory}
-            onChange={(e) =>
-              onServiceCategoryChange(
-                e.target.value === 'all' ? 'all' : (Number(e.target.value) as Dis_discountrequestsdis_servicecategory)
-              )
-            }
-          >
-            <option value="all">All Service Categories</option>
-            {SERVICE_CATEGORY_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </div>
+      </div>
+      <OptionFilterSelect
+        label="Filter by Service Level"
+        allLabel="All Service Levels"
+        options={SERVICE_LEVEL_OPTIONS}
+        value={serviceLevel}
+        onChange={onServiceLevelChange}
+      />
+      <OptionFilterSelect
+        label="Filter by Service Category"
+        allLabel="All Service Categories"
+        options={SERVICE_CATEGORY_OPTIONS}
+        value={serviceCategory}
+        onChange={onServiceCategoryChange}
+      />
+      <div className="grid-toolbar-end">
+        <span className="grid-result-count">
+          Showing <strong>{shownCount}</strong> of {totalCount}
+        </span>
         {onRefresh && (
-          <button type="button" className="filter-btn" onClick={onRefresh} disabled={refreshing}>
-            {refreshing ? 'Refreshing…' : 'Refresh'}
+          <button type="button" className="filter-btn" onClick={onRefresh}>
+            Refresh
           </button>
         )}
       </div>

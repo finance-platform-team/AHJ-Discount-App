@@ -1,12 +1,13 @@
-export type ScreenKey = 'requests' | 'matrices';
+export type ScreenKey = 'requests' | 'transactions' | 'matrices';
 
 interface SidebarProps {
   active: ScreenKey;
   onNavigate: (screen: ScreenKey) => void;
   outOfAuthorityCount: number;
+  decisionCount: number;
 }
 
-export function Sidebar({ active, onNavigate, outOfAuthorityCount }: SidebarProps) {
+export function Sidebar({ active, onNavigate, outOfAuthorityCount, decisionCount }: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
@@ -22,9 +23,13 @@ export function Sidebar({ active, onNavigate, outOfAuthorityCount }: SidebarProp
           <span>Request Approvals</span>
           {outOfAuthorityCount > 0 && <span className="sidebar-badge sidebar-badge-red">{outOfAuthorityCount}</span>}
         </button>
-        <button className="sidebar-link disabled" disabled title="Coming soon">
+        <button
+          className={`sidebar-link ${active === 'transactions' ? 'active' : ''}`}
+          onClick={() => onNavigate('transactions')}
+          title="Approval Cycle Transactions"
+        >
           <span>Approval Cycle Trans...</span>
-          <span className="sidebar-badge sidebar-badge-grey">0</span>
+          <span className="sidebar-badge sidebar-badge-grey">{decisionCount}</span>
         </button>
       </div>
       <div className="sidebar-section">

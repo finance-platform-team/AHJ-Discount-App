@@ -1,21 +1,27 @@
 import { useEffect, useState } from 'react';
 import { Sidebar, type ScreenKey } from './components/Sidebar';
-import { TopBar } from './components/TopBar';
+import { TopBar, type Theme } from './components/TopBar';
 import { RequestApprovalsScreen } from './screens/RequestApprovalsScreen';
 import { DiscountMatricesScreen } from './screens/DiscountMatricesScreen';
+import { ApprovalCycleScreen } from './screens/ApprovalCycleScreen';
 import { useCurrentUser } from './lib/currentUser';
 import './styles.css';
 
+const APP_NAME = 'AHJ Discount Approval';
+
 const SCREEN_META: Record<ScreenKey, { breadcrumb: string[]; title: string }> = {
-  requests: { breadcrumb: ['AHJ Discount Approval', 'Requests'], title: 'Discounts Authorization' },
-  matrices: { breadcrumb: ['AHJ Discount Approval', 'Reference'], title: 'Discount Limit Matrices' },
+  requests: { breadcrumb: [APP_NAME, 'Requests'], title: 'Discounts Authorization' },
+  transactions: { breadcrumb: [APP_NAME, 'Workflow'], title: 'Approval Cycle Transactions' },
+  matrices: { breadcrumb: [APP_NAME, 'Reference'], title: 'Discount Limit Matrices' },
 };
 
 function App() {
   const [screen, setScreen] = useState<ScreenKey>('requests');
   const [outOfAuthorityCount, setOutOfAuthorityCount] = useState(0);
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const { user: currentUser } = useCurrentUser();
+  const [decisionCount, setDecisionCount] = useState(0);
+  const [theme, setTheme] = useState<Theme>('light');
+  // Resolved once here and shared, so the signed-in user and their roles are only fetched once.
+  const { user: currentUser, loading: userLoading } = useCurrentUser();
   const meta = SCREEN_META[screen];
 
   useEffect(() => {
@@ -24,21 +30,36 @@ function App() {
 
   return (
     <div className="app-shell">
-      <Sidebar active={screen} onNavigate={setScreen} outOfAuthorityCount={outOfAuthorityCount} />
+      <Sidebar
+        active={screen}
+        onNavigate={setScreen}
+        outOfAuthorityCount={outOfAuthorityCount}
+        decisionCount={decisionCount}
+      />
       <div className="app-content">
         <TopBar
           breadcrumb={meta.breadcrumb}
           title={meta.title}
           theme={theme}
-          onToggleTheme={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
+          onThemeChange={setTheme}
           userName={currentUser?.fullName ?? 'Signed-in User'}
-          userSubtitle="AHJ Discount Approval"
+          userSubtitle={APP_NAME}
         />
-        {screen === 'requests' ? (
-          <RequestApprovalsScreen onOutOfAuthorityCountChange={setOutOfAuthorityCount} />
-        ) : (
-          <DiscountMatricesScreen />
+        {screen === 'requests' && (
+          <RequestApprovalsScreen
+            currentUser={currentUser}
+            userLoading={userLoading}
+            onOutOfAuthorityCountChange={setOutOfAuthorityCount}
+          />
         )}
+        {screen === 'transactions' && (
+          <ApprovalCycleScreen
+            currentUser={currentUser}
+            userLoading={userLoading}
+            onDecisionCountChange={setDecisionCount}
+          />
+        )}
+        {screen === 'matrices' && <DiscountMatricesScreen />}
       </div>
     </div>
   );

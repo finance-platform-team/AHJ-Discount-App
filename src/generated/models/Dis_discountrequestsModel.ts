@@ -28,15 +28,15 @@ export const Dis_discountrequestsdis_requeststatus = {
 } as const;
 export type Dis_discountrequestsdis_requeststatus = keyof typeof Dis_discountrequestsdis_requeststatus;
 export const Dis_discountrequestsdis_servicecategory = {
-  776940000: 'Packages',
-  776940001: 'RADService',
-  776940002: 'LAB Service',
-  776940003: 'Procedure',
-  776940004: 'Dental without Prosthesis',
-  776940005: 'Home Care',
-  776940006: 'Mortality',
-  776940007: 'DAMA',
-  776940008: 'Medications'
+  776940000: 'Consultation',
+  776940001: 'Lab & Rad',
+  776940002: 'Dental without Prosthesis',
+  776940003: 'Home Care',
+  776940004: 'OR Packages',
+  776940005: 'Mortality',
+  776940006: 'DAMA',
+  776940007: 'Medications',
+  776940008: 'Procedures'
 } as const;
 export type Dis_discountrequestsdis_servicecategory = keyof typeof Dis_discountrequestsdis_servicecategory;
 export const Dis_discountrequestsdis_servicelevel = {
@@ -87,6 +87,7 @@ export interface Dis_discountrequestsBase {
   dis_reason?: string;
   dis_requeststatus?: Dis_discountrequestsdis_requeststatus;
   dis_servicecategory?: Dis_discountrequestsdis_servicecategory[];
+  dis_servicecategorydotcare?: string;
   dis_servicelevel?: Dis_discountrequestsdis_servicelevel;
   dis_servicename?: string;
   dis_timeblock?: Dis_discountrequestsdis_timeblock;

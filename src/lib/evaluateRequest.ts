@@ -2,6 +2,7 @@ import { resolveClosestUser } from './userResolution';
 import { derivePositionFromTitle } from './positionDerivation';
 import { deriveTimeBlock } from './timeBlock';
 import { findMatrixRule } from './matrixLookup';
+import { mapDotcareServiceCategory } from './serviceCategoryMapping';
 import { AUTHORITY_OUT, AUTHORITY_WITHIN, DEFAULT_POSITION_PA } from './optionSets';
 import type { EvaluatedRequestFields, MatrixRowLite, SystemUserLite } from './types';
 
@@ -10,11 +11,40 @@ export interface RequestInputForEvaluation {
   dis_agentdotcare?: string;
   dis_actualcreatedon?: string;
   dis_servicelevel?: number;
-  /** dis_servicecategory is a multi-select choice in the live schema; a request carries one true category. */
-  dis_servicecategory?: number[];
+  /** Raw DotCare category name (EnName) — the only source of the matrix Service Category. */
+  dis_servicecategorydotcare?: string;
   dis_totaldiscountpercent?: number;
   dis_totaldiscountamount?: number;
   dis_billtotal?: number;
+}
+
+type AuthorityAssessment = Pick<EvaluatedRequestFields, 'authorizedLimit' | 'overageAboveAuthority' | 'authorityCheck'>;
+
+/** Applies the matched matrix rule (if any) to the request's discount to decide whether it is within authority. */
+function assessAuthority(matchedRow: MatrixRowLite | undefined, request: RequestInputForEvaluation): AuthorityAssessment {
+  if (!matchedRow) {
+    return { authorizedLimit: undefined, overageAboveAuthority: undefined, authorityCheck: AUTHORITY_OUT };
+  }
+  if (matchedRow.dis_isunlimited) {
+    return {
+      authorizedLimit: matchedRow.dis_authorizedlimitpercent,
+      overageAboveAuthority: 0,
+      authorityCheck: AUTHORITY_WITHIN,
+    };
+  }
+
+  const hasAuthority = !!matchedRow.dis_hasauthority;
+  const limitPercent = matchedRow.dis_authorizedlimitpercent ?? 0;
+  const totalDiscountPercent = request.dis_totaldiscountpercent ?? 0;
+  const totalDiscountAmount = request.dis_totaldiscountamount ?? 0;
+  const billTotal = request.dis_billtotal ?? 0;
+
+  return {
+    // A "no authority" rule keeps its raw (possibly empty) limit; an authorized rule defaults to 0%.
+    authorizedLimit: hasAuthority ? limitPercent : matchedRow.dis_authorizedlimitpercent,
+    overageAboveAuthority: Math.max(0, totalDiscountAmount - (billTotal * limitPercent) / 100),
+    authorityCheck: hasAuthority && totalDiscountPercent <= limitPercent ? AUTHORITY_WITHIN : AUTHORITY_OUT,
+  };
 }
 
 export function evaluateRequest(
@@ -23,59 +53,30 @@ export function evaluateRequest(
   matrixRows: MatrixRowLite[]
 ): EvaluatedRequestFields {
   const resolution = resolveClosestUser(request.dis_authorizedbynamedotcare, systemUsers);
+  const agentResolution = resolveClosestUser(request.dis_agentdotcare, systemUsers);
   const authorizedByPosition = derivePositionFromTitle(resolution.user?.title);
   const timeBlockFromClock = deriveTimeBlock(request.dis_actualcreatedon);
-  const agentResolution = resolveClosestUser(request.dis_agentdotcare, systemUsers);
 
-  const serviceCategory = request.dis_servicecategory?.[0];
+  // DotCare is the only source; a missing or unmapped DotCare category is an unmatched service.
+  const serviceCategory = mapDotcareServiceCategory(request.dis_servicecategorydotcare);
   const unmatchedService = serviceCategory == null;
 
-  const match = unmatchedService
-    ? { tier: 'none' as const, row: undefined as MatrixRowLite | undefined }
+  const matchedRow = unmatchedService
+    ? undefined
     : findMatrixRule(matrixRows, {
         serviceLevel: request.dis_servicelevel,
         timeBlock: timeBlockFromClock,
         serviceCategory,
         position: authorizedByPosition,
-      });
-
-  const matchedRow = match.row;
-  const totalDiscountPercent = request.dis_totaldiscountpercent ?? 0;
-  const totalDiscountAmount = request.dis_totaldiscountamount ?? 0;
-  const billTotal = request.dis_billtotal ?? 0;
-
-  let authorizedLimit: number | undefined;
-  let overageAboveAuthority: number | undefined;
-  let authorityCheck: number;
-
-  if (!matchedRow) {
-    authorizedLimit = undefined;
-    overageAboveAuthority = undefined;
-    authorityCheck = AUTHORITY_OUT;
-  } else if (matchedRow.dis_isunlimited) {
-    authorizedLimit = matchedRow.dis_authorizedlimitpercent;
-    overageAboveAuthority = 0;
-    authorityCheck = AUTHORITY_WITHIN;
-  } else if (!matchedRow.dis_hasauthority) {
-    authorizedLimit = matchedRow.dis_authorizedlimitpercent;
-    const rawOverage = totalDiscountAmount - (billTotal * (authorizedLimit ?? 0)) / 100;
-    overageAboveAuthority = Math.max(0, rawOverage);
-    authorityCheck = AUTHORITY_OUT;
-  } else {
-    authorizedLimit = matchedRow.dis_authorizedlimitpercent ?? 0;
-    const rawOverage = totalDiscountAmount - (billTotal * authorizedLimit) / 100;
-    overageAboveAuthority = Math.max(0, rawOverage);
-    authorityCheck = totalDiscountPercent > authorizedLimit ? AUTHORITY_OUT : AUTHORITY_WITHIN;
-  }
+      }).row;
 
   return {
     authorizedBySystemUserId: resolution.user?.systemuserid,
     authorizedByPosition: authorizedByPosition ?? DEFAULT_POSITION_PA,
     timeBlock: matchedRow ? matchedRow.dis_timeblock : timeBlockFromClock,
+    serviceCategory,
     matchedMatrixRuleId: matchedRow?.dis_discountlimitmatrixid,
-    authorizedLimit,
-    overageAboveAuthority,
-    authorityCheck,
+    ...assessAuthority(matchedRow, request),
     unmatchedEmployee: resolution.status === 'unmatched',
     ambiguousEmployee: resolution.status === 'ambiguous',
     unmatchedService,

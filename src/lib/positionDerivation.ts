@@ -7,17 +7,24 @@ import { DEFAULT_POSITION_PA, POSITION_ENTRIES } from './optionSets';
 // has already matched.
 const GENERIC_TITLE_WORDS = new Set(['manager', 'officer', 'chief', 'director', 'supervisor']);
 
+// An abbreviation hit (title literally contains "CEO", "COO", "FM"...) is a much stronger signal
+// than a shared plain-English word, since it's the exact code this app's own position list uses —
+// e.g. "Deputy Chairman & CEO" must resolve to CEO even though none of "Chief Executive Officer"'s
+// words appear in the title.
+const ABBR_MATCH_WEIGHT = 2;
+
 function titleTokens(value: string | null | undefined): string[] {
   // Strip punctuation ("Deputy Chairman & CEO") so it never counts as its own bogus token.
   const normalized = normalizeText(value).replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
   return normalized ? normalized.split(' ') : [];
 }
 
-// An abbreviation hit (title literally contains "CEO", "COO", "FM"...) is a much stronger signal
-// than a shared plain-English word, since it's the exact code this app's own position list uses —
-// e.g. "Deputy Chairman & CEO" must resolve to CEO even though none of "Chief Executive Officer"'s
-// words appear in the title.
-const ABBR_MATCH_WEIGHT = 2;
+/** Position tokens never change, so tokenize them once instead of on every title lookup. */
+const POSITION_TOKENS = POSITION_ENTRIES.map((entry) => ({
+  code: entry.code,
+  abbrTokens: titleTokens(entry.abbr),
+  nameTokens: titleTokens(entry.fullName),
+}));
 
 /**
  * Derives the matrix position from the systemuser's free-text `title` by closest token match
@@ -34,16 +41,16 @@ export function derivePositionFromTitle(title: string | null | undefined): numbe
   let bestDistinguishingOverlap = 0;
   let bestTotalOverlap = 0;
 
-  for (const entry of POSITION_ENTRIES) {
+  for (const { code, abbrTokens, nameTokens } of POSITION_TOKENS) {
     let distinguishingOverlap = 0;
     let totalOverlap = 0;
 
-    for (const t of titleTokens(entry.abbr)) {
+    for (const t of abbrTokens) {
       if (!userTokens.has(t)) continue;
       totalOverlap += ABBR_MATCH_WEIGHT;
       distinguishingOverlap += ABBR_MATCH_WEIGHT;
     }
-    for (const t of titleTokens(entry.fullName)) {
+    for (const t of nameTokens) {
       if (!userTokens.has(t)) continue;
       totalOverlap++;
       if (!GENERIC_TITLE_WORDS.has(t)) distinguishingOverlap++;
@@ -54,7 +61,7 @@ export function derivePositionFromTitle(title: string | null | undefined): numbe
       distinguishingOverlap > bestDistinguishingOverlap ||
       (distinguishingOverlap === bestDistinguishingOverlap && totalOverlap > bestTotalOverlap)
     ) {
-      bestCode = entry.code;
+      bestCode = code;
       bestDistinguishingOverlap = distinguishingOverlap;
       bestTotalOverlap = totalOverlap;
     }

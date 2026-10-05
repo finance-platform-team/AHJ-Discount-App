@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "esbuild \"src/**/*.test.ts\" --bundle --platform=node --format=esm --outdir=node_modules/.tmp/tests --out-extension:.js=.mjs --log-level=warning && node --test \"node_modules/.tmp/tests/**/*.test.mjs\""
   },
   "dependencies": {
     "@microsoft/power-apps": "^1.2.5",

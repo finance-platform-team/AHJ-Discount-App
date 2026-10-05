@@ -435,15 +435,15 @@
           "x-ms-dataverse-type": "MultiSelectPicklistType",
           "x-ms-schema-name": "dis_ServiceCategory",
           "enum": [
-            "Packages",
-            "RADService",
-            "LAB Service",
-            "Procedure",
+            "Consultation",
+            "Lab & Rad",
             "Dental without Prosthesis",
             "Home Care",
+            "OR Packages",
             "Mortality",
             "DAMA",
-            "Medications"
+            "Medications",
+            "Procedures"
           ],
           "x-ms-enum-values": [
             776940000,
@@ -471,6 +471,14 @@
           "x-ms-isGlobal": true,
           "x-ms-optionsetdisplayname": "Service Category",
           "x-ms-optionSetType": "Picklist"
+        },
+        "dis_servicecategorydotcare": {
+          "type": "string",
+          "title": "Service Category (Dotcare) ",
+          "x-ms-dataverse-attribute": "dis_servicecategorydotcare",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "dis_ServiceCategoryDotcare",
+          "maxLength": 200
         },
         "dis_servicecategoryname": {
           "type": "string",

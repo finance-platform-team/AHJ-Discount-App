@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.node.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.test.tsbuildinfo"
+  },
+  // Explicit (empty) files list keeps `tsc -b` from failing with TS18003 while no *.test.ts exist yet.
+  "files": [],
+  "include": ["src/**/*.test.ts"]
+}

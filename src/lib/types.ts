@@ -35,6 +35,8 @@ export interface EvaluatedRequestFields {
   authorizedBySystemUserId?: string;
   authorizedByPosition: number;
   timeBlock?: number;
+  /** Matrix Service Category the request was evaluated under; undefined => unmatched service. */
+  serviceCategory?: number;
   matchedMatrixRuleId?: string;
   authorizedLimit?: number;
   overageAboveAuthority?: number;

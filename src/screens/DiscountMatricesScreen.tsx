@@ -1,15 +1,32 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { fetchMatrixRows } from '../lib/dataSync';
 import type { MatrixRowLite } from '../lib/types';
 import {
   POSITION_ENTRIES,
-  SERVICE_CATEGORY,
-  SERVICE_LEVEL,
   TIME_BLOCK,
   DEFAULT_POSITION_PA,
   TIME_BLOCK_WILDCARD,
+  serviceCategoryLabel,
+  serviceLevelLabel,
+  timeBlockLabel,
 } from '../lib/optionSets';
-import { seedDiscountLimitMatrix, type SeedProgress } from '../lib/seedMatrixData';
+import { deleteAllDiscountLimitMatrixRows, seedDiscountLimitMatrix } from '../lib/seedMatrixData';
+import { DevDataActions, type DevDataAction } from '../components/DevDataActions';
+
+const FALLBACK_PA_LIMIT_PERCENT = 10;
+
+const MATRIX_DEV_ACTIONS: DevDataAction[] = [
+  { label: 'Seed Data (Dev)', busyLabel: 'Seeding…', doneLabel: 'Seeded', run: seedDiscountLimitMatrix },
+  {
+    label: 'Delete All (Dev)',
+    busyLabel: 'Deleting…',
+    doneLabel: 'Deleted',
+    confirm:
+      'Permanently delete ALL Discount Limit Matrix records from Dataverse?\n\n' +
+      'This cannot be undone. Until the matrix is re-entered, every request will be evaluated as Out of Authority.',
+    run: deleteAllDiscountLimitMatrixRows,
+  },
+];
 
 function cellValue(row: MatrixRowLite | undefined): string {
   if (!row) return '';
@@ -18,70 +35,67 @@ function cellValue(row: MatrixRowLite | undefined): string {
   return `${row.dis_authorizedlimitpercent ?? 0}%`;
 }
 
+/** Rows sharing a level/time block/category form one table row, one cell per position. */
+const groupKey = (r: MatrixRowLite) => `${r.dis_servicelevel}|${r.dis_timeblock}|${r.dis_servicecategory}`;
+
+function groupMatrixRows(rows: MatrixRowLite[]): MatrixRowLite[][] {
+  const groups = new Map<string, MatrixRowLite[]>();
+  for (const row of rows) {
+    const key = groupKey(row);
+    const group = groups.get(key);
+    if (group) group.push(row);
+    else groups.set(key, [row]);
+  }
+  return Array.from(groups.values()).sort(([a], [b]) => {
+    return (
+      (a.dis_servicelevel ?? 0) - (b.dis_servicelevel ?? 0) ||
+      (a.dis_servicecategory ?? 0) - (b.dis_servicecategory ?? 0) ||
+      (a.dis_timeblock ?? 0) - (b.dis_timeblock ?? 0)
+    );
+  });
+}
+
+function buildBaseRuleText(rows: MatrixRowLite[]): string {
+  const paDefault = rows.find((r) => r.dis_position === DEFAULT_POSITION_PA && r.dis_timeblock === TIME_BLOCK_WILDCARD);
+  const defaultPct = paDefault?.dis_authorizedlimitpercent ?? FALLBACK_PA_LIMIT_PERCENT;
+  const windowLabels = Object.values(TIME_BLOCK).filter((l) => l !== 'Not Time-Restricted');
+  return (
+    `Default PA limit is ${defaultPct}% unless overridden. ` +
+    `Block-time exceptions apply during ${windowLabels.join(', ')} for the relevant Service Categories. ` +
+    `Legend: ∞ = unlimited, "–" = not authorized, must escalate.`
+  );
+}
+
 export function DiscountMatricesScreen() {
   const [matrixRows, setMatrixRows] = useState<MatrixRowLite[]>([]);
   const [loading, setLoading] = useState(true);
-  const [seeding, setSeeding] = useState(false);
-  const [seedProgress, setSeedProgress] = useState<SeedProgress | null>(null);
 
-  const reload = () => {
-    setLoading(true);
-    fetchMatrixRows()
-      .then(setMatrixRows)
-      .finally(() => setLoading(false));
-  };
+  // State is only set once the fetch settles, so this is safe to call straight from an effect.
+  const loadRows = useCallback(
+    () =>
+      fetchMatrixRows()
+        .then(setMatrixRows)
+        .finally(() => setLoading(false)),
+    []
+  );
 
   useEffect(() => {
-    reload();
-  }, []);
+    loadRows();
+  }, [loadRows]);
 
-  const handleSeed = async () => {
-    setSeeding(true);
-    setSeedProgress(null);
-    try {
-      const result = await seedDiscountLimitMatrix(setSeedProgress);
-      setSeedProgress(result);
-      reload();
-    } finally {
-      setSeeding(false);
-    }
+  const reloadRows = () => {
+    setLoading(true);
+    loadRows();
   };
 
-  const groupedRows = useMemo(() => {
-    const key = (r: MatrixRowLite) => `${r.dis_servicelevel}|${r.dis_timeblock}|${r.dis_servicecategory}`;
-    const map = new Map<string, MatrixRowLite[]>();
-    for (const row of matrixRows) {
-      const k = key(row);
-      if (!map.has(k)) map.set(k, []);
-      map.get(k)!.push(row);
-    }
-    return Array.from(map.values()).sort((a, b) => {
-      const r1 = a[0];
-      const r2 = b[0];
-      return (
-        (r1.dis_servicelevel ?? 0) - (r2.dis_servicelevel ?? 0) ||
-        (r1.dis_servicecategory ?? 0) - (r2.dis_servicecategory ?? 0) ||
-        (r1.dis_timeblock ?? 0) - (r2.dis_timeblock ?? 0)
-      );
-    });
-  }, [matrixRows]);
-
-  const baseRuleText = useMemo(() => {
-    const paDefault = matrixRows.find(
-      (r) => r.dis_position === DEFAULT_POSITION_PA && r.dis_timeblock === TIME_BLOCK_WILDCARD
-    );
-    const defaultPct = paDefault?.dis_authorizedlimitpercent ?? 10;
-    const windowLabels = Object.values(TIME_BLOCK).filter((l) => l !== 'Not Time-Restricted');
-    return `Default PA limit is ${defaultPct}% unless overridden. Block-time exceptions apply during ${windowLabels.join(
-      ', '
-    )} for the relevant Service Categories. Legend: ∞ = unlimited, ↑X% = escalation-flagged tier, "–" = not authorized, must escalate.`;
-  }, [matrixRows]);
+  const groupedRows = useMemo(() => groupMatrixRows(matrixRows), [matrixRows]);
+  const baseRuleText = useMemo(() => buildBaseRuleText(matrixRows), [matrixRows]);
 
   return (
     <div className="screen">
       <div className="screen-body">
         <div className="page-header">
-          <p>AHJ Discount Policy — Section 6.1 (transcribed from the source policy document).</p>
+          <p>AHJ Discount Policy (transcribed from the source policy document).</p>
         </div>
 
         <div className="info-card">
@@ -102,15 +116,7 @@ export function DiscountMatricesScreen() {
 
         <div className="info-card">
           <h3>Discount Limit Matrix</h3>
-          <button type="button" onClick={handleSeed} disabled={seeding}>
-            {seeding ? 'Seeding…' : 'Seed Data (Dev)'}
-          </button>
-          {seedProgress && (
-            <p>
-              Seeded {seedProgress.done}/{seedProgress.total}
-              {seedProgress.failed.length > 0 && ` — ${seedProgress.failed.length} failed`}
-            </p>
-          )}
+          <DevDataActions actions={MATRIX_DEV_ACTIONS} onDone={reloadRows} />
           {loading ? (
             <div className="loading">Loading matrix…</div>
           ) : (
@@ -130,10 +136,10 @@ export function DiscountMatricesScreen() {
                   {groupedRows.map((group) => {
                     const first = group[0];
                     return (
-                      <tr key={`${first.dis_servicelevel}|${first.dis_timeblock}|${first.dis_servicecategory}`}>
-                        <td>{(SERVICE_LEVEL as Record<number, string>)[first.dis_servicelevel ?? -1] ?? ''}</td>
-                        <td>{(TIME_BLOCK as Record<number, string>)[first.dis_timeblock ?? -1] ?? ''}</td>
-                        <td>{(SERVICE_CATEGORY as Record<number, string>)[first.dis_servicecategory ?? -1] ?? ''}</td>
+                      <tr key={groupKey(first)}>
+                        <td>{serviceLevelLabel(first.dis_servicelevel)}</td>
+                        <td>{timeBlockLabel(first.dis_timeblock)}</td>
+                        <td>{serviceCategoryLabel(first.dis_servicecategory)}</td>
                         {POSITION_ENTRIES.map((p) => (
                           <td key={p.code}>{cellValue(group.find((r) => r.dis_position === p.code))}</td>
                         ))}
