@@ -71,6 +71,8 @@ export function ReviewModal({ row, onCancel, onReject, onLeaveApproved }: Review
   }
 
   const locked = row.decisionLocked;
+  // Anyone else who can see an open request (e.g. a Discount App Admin) gets it read-only.
+  const readOnly = locked || !row.canDecide;
   const rejected = row.requestStatus === REQUEST_REJECTED;
   const decisionLabel = rejected ? 'Rejected' : 'Left Approved';
   const authorityTone: PillTone = row.isOutOfAuthority ? 'danger' : 'success';
@@ -245,7 +247,7 @@ export function ReviewModal({ row, onCancel, onReject, onLeaveApproved }: Review
               {locked && <Remark label="Decision Comment" text={row.decisionComment} />}
             </div>
 
-            {!locked && (
+            {!readOnly && (
               <div className="rm-justification">
                 <label className="modal-label" htmlFor="rm-justification">
                   Justification
@@ -267,10 +269,14 @@ export function ReviewModal({ row, onCancel, onReject, onLeaveApproved }: Review
         <footer className="rm-footer">
           <div className="rm-footer-status">
             <span className={cx('rm-dot', !locked && 'rm-dot-pending')} />
-            {locked ? 'Decision locked' : 'Awaiting your decision'}
+            {locked
+              ? 'Decision locked'
+              : readOnly
+                ? 'View only — awaiting the Authorized By’s decision'
+                : 'Awaiting your decision'}
           </div>
           <div className="modal-actions">
-            {locked ? (
+            {readOnly ? (
               <button type="button" className="modal-btn modal-btn-dark" onClick={onCancel}>
                 Close
               </button>

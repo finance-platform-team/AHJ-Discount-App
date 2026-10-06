@@ -8,11 +8,26 @@ export class DecisionLockedError extends Error {
   }
 }
 
-/** BRL-013: every decision write re-checks the lock against the server record first — never trusts client state. */
-async function assertNotLocked(requestId: string): Promise<void> {
-  const current = await Dis_discountrequestsService.get(requestId, { select: ['dis_decisionlocked'] });
+export class NotAuthorizedToDecideError extends Error {
+  constructor() {
+    super('Only the Authorized By of this request can approve or reject it.');
+  }
+}
+
+/**
+ * BRL-013: before every decision write, re-reads the request from Dataverse rather than trusting
+ * the grid's copy — it must still be open, and its persisted Authorized By must be the decider.
+ * This runs in the browser, so it guards the app's own flow; it is not a server-side control.
+ */
+async function assertCanDecide(requestId: string, decidedBySystemUserId: string): Promise<void> {
+  const current = await Dis_discountrequestsService.get(requestId, {
+    select: ['dis_decisionlocked', '_dis_authorizedbyname_value'],
+  });
   if (current.data?.dis_decisionlocked) {
     throw new DecisionLockedError();
+  }
+  if (current.data?._dis_authorizedbyname_value?.toLowerCase() !== decidedBySystemUserId.toLowerCase()) {
+    throw new NotAuthorizedToDecideError();
   }
 }
 
@@ -22,7 +37,7 @@ async function recordDecision(
   decidedBySystemUserId: string,
   fields: Partial<Dis_discountrequestsBase>
 ): Promise<void> {
-  await assertNotLocked(requestId);
+  await assertCanDecide(requestId, decidedBySystemUserId);
   await Dis_discountrequestsService.update(requestId, {
     ...fields,
     dis_decisiondate: new Date().toISOString(),

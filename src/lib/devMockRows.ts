@@ -86,6 +86,8 @@ export function buildMockRows(): RequestRowViewModel[] {
       decidedByRole: s.locked ? 'MD' : '',
       decisionDate: s.locked ? created.toISOString() : '',
       isOutOfYourAuthority: !!s.mine,
+      // Every open mock row is decidable so the review dialog's actions can be styled.
+      canDecide: !s.locked,
     };
   });
 }

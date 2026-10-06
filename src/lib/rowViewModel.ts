@@ -35,6 +35,8 @@ export interface RequestRowViewModel {
   decidedByRole: string;
   decisionDate: string;
   isOutOfYourAuthority: boolean;
+  /** Only the request's own Authorized By may approve or reject it, and only while it is open. */
+  canDecide: boolean;
 }
 
 export function buildRowViewModel(
@@ -63,8 +65,10 @@ export function buildRowViewModel(
   const decidedByRole = decidedBy ? positionAbbr(derivePositionFromTitle(decidedBy.title)) : '';
 
   const isOutOfAuthority = evaluation.authorityCheck === AUTHORITY_OUT;
-  const isOutOfYourAuthority =
-    !!currentUserSystemUserId && isOutOfAuthority && evaluation.authorizedBySystemUserId === currentUserSystemUserId;
+  const isAuthorizedByViewer =
+    !!currentUserSystemUserId &&
+    evaluation.authorizedBySystemUserId?.toLowerCase() === currentUserSystemUserId.toLowerCase();
+  const isOutOfYourAuthority = isAuthorizedByViewer && isOutOfAuthority;
 
   return {
     id: request.dis_discountrequestid,
@@ -95,5 +99,6 @@ export function buildRowViewModel(
     decidedByRole,
     decisionDate: request.dis_decisiondate ?? '',
     isOutOfYourAuthority,
+    canDecide: isAuthorizedByViewer && !request.dis_decisionlocked,
   };
 }

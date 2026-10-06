@@ -6,12 +6,13 @@ import { ReviewModal } from '../components/ReviewModal';
 import { loadRequestRows } from '../lib/requestRows';
 import type { RequestRowViewModel } from '../lib/rowViewModel';
 import type { CurrentUser } from '../lib/currentUser';
-import { hasFullAccess, requestScopeFor } from '../lib/accessScope';
+import { requestScopeFor } from '../lib/accessScope';
 import { leaveApproved, reject } from '../lib/decisionService';
 import { countRequests, DEFAULT_REQUEST_FILTERS, filterRequests, type RequestFilters } from '../lib/requestFilters';
 import { buildMockRows, isMockMode } from '../lib/devMockRows';
 import { deleteAllDiscountRequests, seedDiscountRequests } from '../lib/seedRequestData';
 import { DevDataActions, type DevDataAction } from '../components/DevDataActions';
+import { canUseDevDataActions } from '../lib/devAccess';
 
 /** Seed needs the signed-in user for its "Out of Your Authority" cases, so the list is built per user. */
 const requestDevActions = (currentUser: CurrentUser | null): DevDataAction[] => [
@@ -47,9 +48,9 @@ export function RequestApprovalsScreen({
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [filters, setFilters] = useState<RequestFilters>(DEFAULT_REQUEST_FILTERS);
-  // Seeding/deleting touches every request, so it is only offered to full-access users.
+  // Seeding/deleting touches every request, so it is only offered to full-access users in a dev build.
   const devActions = useMemo(
-    () => (hasFullAccess(currentUser) ? requestDevActions(currentUser) : []),
+    () => (canUseDevDataActions(currentUser) ? requestDevActions(currentUser) : []),
     [currentUser]
   );
   const [selectedRow, setSelectedRow] = useState<RequestRowViewModel | null>(null);
@@ -91,7 +92,7 @@ export function RequestApprovalsScreen({
 
   /** Records a decision on the open request, then closes the dialog and reloads the grid. */
   async function decide(record: (requestId: string, decidedBySystemUserId: string) => Promise<void>) {
-    if (!selectedRow || !currentUser) return;
+    if (!selectedRow?.canDecide || !currentUser) return;
     await record(selectedRow.id, currentUser.systemUserId);
     setSelectedRow(null);
     await load();

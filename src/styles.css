@@ -888,6 +888,83 @@ table.grid td.cell-wrap {
   color: var(--ds-color-text-secondary);
 }
 
+.app-loading,
+.no-access {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background:
+    radial-gradient(600px 400px at 100% 0%, rgba(141, 115, 222, 0.06), transparent 60%),
+    radial-gradient(700px 500px at 0% 100%, rgba(201, 155, 59, 0.06), transparent 60%),
+    radial-gradient(900px 600px at 50% -10%, rgba(18, 110, 92, 0.05), transparent 60%),
+    var(--ds-neutral-50);
+}
+
+.app-loading-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 280px;
+  padding: 32px 36px 28px;
+  background: var(--ds-color-surface-raised);
+  border: 1px solid var(--ds-color-primary-line);
+  border-radius: var(--ds-radius-squircle-lg);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.app-loading-spinner {
+  width: 44px;
+  height: 44px;
+  margin-bottom: 14px;
+  border-radius: 50%;
+  border: 3px solid var(--ds-primary-100);
+  border-top-color: var(--ds-color-primary);
+  border-right-color: var(--ds-color-primary-mint);
+  animation: app-loading-spin 0.9s linear infinite;
+}
+
+@keyframes app-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.app-loading-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ds-color-primary-deep);
+}
+
+.app-loading-text {
+  font-size: 13px;
+  color: var(--ds-color-text-secondary);
+}
+
+.no-access-card {
+  max-width: 480px;
+  padding: 32px 28px;
+  text-align: center;
+  background: var(--ds-color-surface-raised);
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  border-radius: var(--ds-radius-squircle-lg);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.no-access-card h1 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  color: var(--status-error-text);
+}
+
+.no-access-card p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ds-color-text-secondary);
+}
+
 /* ---------------------------------------------------------------------- */
 /* StatusBadge (clinical/workflow tones, §3.6)                            */
 /* ---------------------------------------------------------------------- */
@@ -1063,7 +1140,7 @@ table.grid td.cell-wrap {
   gap: 16px;
   padding: 20px 24px;
   border-bottom: 1px solid var(--ds-neutral-200);
-  background: linear-gradient(90deg, var(--ds-neutral-50), #ffffff 55%, var(--ds-primary-50));
+  background: linear-gradient(90deg, var(--ds-neutral-50), var(--ds-color-surface-raised) 55%, var(--ds-primary-50));
   flex-shrink: 0;
 }
 
@@ -1188,7 +1265,7 @@ table.grid td.cell-wrap {
 }
 
 .rm-card {
-  background: #ffffff;
+  background: var(--ds-color-surface-raised);
   border: 1px solid var(--ds-neutral-200);
   border-radius: 12px;
   padding: 20px;
@@ -1527,7 +1604,7 @@ table.grid td.cell-wrap {
 
 .rm-trail-card {
   border: 1px solid var(--ds-neutral-200);
-  background: rgba(248, 250, 252, 0.6);
+  background: var(--ds-color-surface-muted);
   border-radius: 12px;
   padding: 16px;
   display: flex;
@@ -1697,6 +1774,11 @@ table.matrix-table td:nth-child(3) {
     transition-duration: 0.001ms !important;
     animation-duration: 0.001ms !important;
   }
+
+  /* A near-zero duration would make an infinite spinner flicker; hold it still instead. */
+  .app-loading-spinner {
+    animation: none !important;
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1752,4 +1834,66 @@ table.matrix-table td:nth-child(3) {
     radial-gradient(700px 500px at 0% 100%, rgba(201, 155, 59, 0.08), transparent 60%),
     radial-gradient(900px 600px at 50% -10%, rgba(18, 110, 92, 0.1), transparent 60%),
     #14151a;
+}
+
+/* Neutral / primary-tint scales are referenced directly by the review modal,
+   so they must flip too: light steps become dark surfaces, dark steps light ink. */
+.dark-mode {
+  --ds-neutral-50: #1c1d22;
+  --ds-neutral-100: #26282e;
+  --ds-neutral-200: rgba(255, 255, 255, 0.1);
+  --ds-neutral-300: #4a515c;
+  --ds-neutral-400: #8b97a6;
+  --ds-neutral-500: #a3aebb;
+  --ds-neutral-600: #bcc5cf;
+  --ds-neutral-700: #d3d9e0;
+  --ds-neutral-800: #e5e9ee;
+  --ds-neutral-900: #f1f5f3;
+  --ds-primary-50: rgba(64, 255, 184, 0.07);
+  --ds-primary-100: rgba(64, 255, 184, 0.12);
+  --ds-primary-200: rgba(64, 255, 184, 0.24);
+  --ds-color-analytics-deep: #e3bd6b;
+  --status-routine-text: #b3c4bf;
+  --status-routine-bg: rgba(211, 222, 218, 0.12);
+  --status-high-text: #f0c069;
+  --status-high-bg: rgba(255, 225, 160, 0.14);
+  --status-confirmed-text: #8fd6e0;
+  --status-confirmed-bg: rgba(185, 230, 235, 0.14);
+  --status-draft-text: #b3bfbb;
+  --status-draft-bg: rgba(211, 218, 216, 0.12);
+  --status-info-text: #8fd6e0;
+  --status-info-bg: rgba(185, 230, 235, 0.12);
+  --ds-shadow-sm: 0 13px 28px rgba(0, 0, 0, 0.3);
+  --ds-shadow-lg: 0 30px 70px rgba(0, 0, 0, 0.45);
+}
+
+/* Inverted neutrals would turn the dark button light; keep it a solid contrast button. */
+.dark-mode .modal-btn-dark {
+  background: var(--ds-color-primary);
+}
+
+.dark-mode .modal-btn-dark:hover:not(:disabled) {
+  background: var(--ds-primary-700);
+}
+
+.dark-mode .rm-card {
+  box-shadow: none;
+}
+
+.dark-mode .rm-exception {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.dark-mode .rm-exception-icon {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fbbf24;
+}
+
+.dark-mode .rm-exception-title {
+  color: #fcd34d;
+}
+
+.dark-mode .rm-exception-list {
+  color: #fde68a;
 }

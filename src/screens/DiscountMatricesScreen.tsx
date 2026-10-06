@@ -15,7 +15,8 @@ import { DevDataActions, type DevDataAction } from '../components/DevDataActions
 
 const FALLBACK_PA_LIMIT_PERCENT = 10;
 
-const MATRIX_DEV_ACTIONS: DevDataAction[] = [
+// Empty in a production build, so the bulk seed/delete code is never shipped.
+const MATRIX_DEV_ACTIONS: DevDataAction[] = !import.meta.env.DEV ? [] : [
   { label: 'Seed Data (Dev)', busyLabel: 'Seeding…', doneLabel: 'Seeded', run: seedDiscountLimitMatrix },
   {
     label: 'Delete All (Dev)',
@@ -66,7 +67,12 @@ function buildBaseRuleText(rows: MatrixRowLite[]): string {
   );
 }
 
-export function DiscountMatricesScreen() {
+interface DiscountMatricesScreenProps {
+  /** Seeding/deleting rewrites the whole policy matrix, so it is only offered to full-access users. */
+  canManageData: boolean;
+}
+
+export function DiscountMatricesScreen({ canManageData }: DiscountMatricesScreenProps) {
   const [matrixRows, setMatrixRows] = useState<MatrixRowLite[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -116,7 +122,7 @@ export function DiscountMatricesScreen() {
 
         <div className="info-card">
           <h3>Discount Limit Matrix</h3>
-          <DevDataActions actions={MATRIX_DEV_ACTIONS} onDone={reloadRows} />
+          <DevDataActions actions={canManageData ? MATRIX_DEV_ACTIONS : []} onDone={reloadRows} />
           {loading ? (
             <div className="loading">Loading matrix…</div>
           ) : (

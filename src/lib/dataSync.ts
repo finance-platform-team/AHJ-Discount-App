@@ -54,9 +54,16 @@ export async function fetchMatrixRows(): Promise<MatrixRowLite[]> {
   return records as unknown as MatrixRowLite[];
 }
 
-/** Every request, or only those matching an OData $filter (e.g. the viewer's access scope). */
-export function fetchRequests(filter?: string): Promise<Dis_discountrequests[]> {
-  return fetchAll((options) => Dis_discountrequestsService.getAll(options), { orderBy: ['createdon desc'], filter });
+/**
+ * Every request, or only those matching an OData $filter (e.g. the viewer's access scope).
+ * `select` limits the columns downloaded; omitted, every column comes back.
+ */
+export function fetchRequests(filter?: string, select?: string[]): Promise<Dis_discountrequests[]> {
+  return fetchAll((options) => Dis_discountrequestsService.getAll(options), {
+    orderBy: ['createdon desc'],
+    filter,
+    select,
+  });
 }
 
 export interface EvaluatedRequest {
