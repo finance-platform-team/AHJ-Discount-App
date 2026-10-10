@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { ListChecksIcon, LockKeyIcon, ScalesIcon, SealPercentIcon, TableIcon } from '@phosphor-icons/react';
 import { Sidebar, type ScreenKey } from './components/Sidebar';
 import { TopBar, type Theme } from './components/TopBar';
 import { RequestApprovalsScreen } from './screens/RequestApprovalsScreen';
@@ -14,11 +15,14 @@ const APP_NAME = 'AHJ Discount Approval';
 
 function AppLoadingScreen() {
   return (
-    <div className="app-loading" role="status" aria-live="polite">
-      <div className="app-loading-card">
-        <div className="app-loading-spinner" aria-hidden="true" />
-        <div className="app-loading-title">{APP_NAME}</div>
-        <div className="app-loading-text">Checking your access…</div>
+    <div className="gate" role="status" aria-live="polite">
+      <div className="gate-card">
+        <span className="gate-mark gate-mark-pulse" aria-hidden="true">
+          <SealPercentIcon weight="fill" />
+        </span>
+        <div className="gate-title">{APP_NAME}</div>
+        <div className="gate-text">Checking your access</div>
+        <div className="gate-progress" aria-hidden="true" />
       </div>
     </div>
   );
@@ -26,10 +30,13 @@ function AppLoadingScreen() {
 
 function NoAccessScreen({ userName }: { userName?: string }) {
   return (
-    <div className="no-access">
-      <div className="no-access-card">
-        <h1>You don't have access to this system</h1>
-        <p>
+    <div className="gate">
+      <div className="gate-card">
+        <span className="gate-mark gate-mark-locked" aria-hidden="true">
+          <LockKeyIcon weight="bold" />
+        </span>
+        <h1 className="gate-title">You don't have access to this system</h1>
+        <p className="gate-text">
           {userName ? `${userName}, your` : 'Your'} account has no {APP_NAME} security role. Contact the system
           administrator to request access.
         </p>
@@ -38,10 +45,25 @@ function NoAccessScreen({ userName }: { userName?: string }) {
   );
 }
 
-const SCREEN_META: Record<ScreenKey, { breadcrumb: string[]; title: string }> = {
-  requests: { breadcrumb: [APP_NAME, 'Requests'], title: 'Discounts Authorization' },
-  transactions: { breadcrumb: [APP_NAME, 'Workflow'], title: 'Approval Cycle Transactions' },
-  matrices: { breadcrumb: [APP_NAME, 'Reference'], title: 'Discount Limit Matrices' },
+const SCREEN_META: Record<ScreenKey, { breadcrumb: string[]; title: string; icon: ReactNode; description: string }> = {
+  requests: {
+    breadcrumb: [APP_NAME, 'Requests'],
+    title: 'Discounts Authorization',
+    icon: <ScalesIcon weight="bold" />,
+    description: 'Discount requests entered in DotCare, classified against the AHJ Discount Policy.',
+  },
+  transactions: {
+    breadcrumb: [APP_NAME, 'Workflow'],
+    title: 'Approval Cycle Transactions',
+    icon: <ListChecksIcon weight="bold" />,
+    description: 'Every accept or reject decision on the requests you entered, with violation flags and comments.',
+  },
+  matrices: {
+    breadcrumb: [APP_NAME, 'Reference'],
+    title: 'Discount Limit Matrices',
+    icon: <TableIcon weight="bold" />,
+    description: 'AHJ Discount Policy, transcribed from the source policy document.',
+  },
 };
 
 function App() {
@@ -71,15 +93,16 @@ function App() {
         onNavigate={setScreen}
         outOfAuthorityCount={outOfAuthorityCount}
         decisionCount={decisionCount}
+        userName={currentUser?.fullName ?? 'Signed-in User'}
       />
-      <div className="app-content">
+      <main className="app-content" key={screen}>
         <TopBar
           breadcrumb={meta.breadcrumb}
           title={meta.title}
+          titleIcon={meta.icon}
+          description={meta.description}
           theme={theme}
           onThemeChange={setTheme}
-          userName={currentUser?.fullName ?? 'Signed-in User'}
-          userSubtitle={APP_NAME}
         />
         {screen === 'requests' && (
           <RequestApprovalsScreen
@@ -96,7 +119,7 @@ function App() {
           />
         )}
         {screen === 'matrices' && <DiscountMatricesScreen canManageData={canUseDevDataActions(currentUser)} />}
-      </div>
+      </main>
     </div>
   );
 }

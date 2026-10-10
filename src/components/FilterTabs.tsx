@@ -1,3 +1,4 @@
+import { ArrowClockwiseIcon, MagnifyingGlassIcon } from '@phosphor-icons/react';
 import { cx } from '../lib/classNames';
 import { SERVICE_CATEGORY, SERVICE_LEVEL, toSelectOptions } from '../lib/optionSets';
 import type { ServiceCategoryFilter, ServiceLevelFilter, StatusFilter } from '../lib/requestFilters';
@@ -96,13 +97,10 @@ export function FilterToolbar({
   return (
     <div className="grid-toolbar">
       <div className="filter-search-wrap">
-        <svg className="filter-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
-          <path d="M20 20l-3.5-3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
+        <MagnifyingGlassIcon className="filter-search-icon" aria-hidden="true" />
         <input
           className="filter-search"
-          placeholder="Search patient, ID, service, staff…"
+          placeholder="Search patient, ID, service, staff"
           aria-label="Filter by keyword"
           value={keyword}
           onChange={(e) => onKeywordChange(e.target.value)}
@@ -128,6 +126,7 @@ export function FilterToolbar({
         </span>
         {onRefresh && (
           <button type="button" className="filter-btn" onClick={onRefresh}>
+            <ArrowClockwiseIcon aria-hidden="true" />
             Refresh
           </button>
         )}

@@ -1,3 +1,4 @@
+import { CheckIcon, EyeIcon, LockSimpleIcon, WarningIcon, XIcon } from '@phosphor-icons/react';
 import { Badge } from './Badge';
 import { cx } from '../lib/classNames';
 import { formatDateTimeShort } from '../lib/format';
@@ -35,25 +36,25 @@ const COLUMNS: { label: string; className?: string }[] = [
 
 const SKELETON_ROWS = 6;
 
-/** Muted em-dash placeholder for empty cells. */
-const EMPTY_CELL = <span className="cell-muted">—</span>;
+/** Muted placeholder for empty cells. */
+const EMPTY_CELL = <span className="cell-empty">-</span>;
 
 function AuthorityBadge({ row }: { row: RequestRowViewModel }) {
   if (row.evaluation.unmatchedService) {
-    return <Badge tone="pending" icon="⚠">Unmatched Service</Badge>;
+    return <Badge tone="pending" icon={<WarningIcon weight="bold" />}>Unmatched Service</Badge>;
   }
   return row.evaluation.authorityCheck === AUTHORITY_WITHIN ? (
-    <Badge tone="success" icon="✓">Within Authority</Badge>
+    <Badge tone="success" icon={<CheckIcon weight="bold" />}>Within Authority</Badge>
   ) : (
-    <Badge tone="urgent" icon="⚠">Out of Authority</Badge>
+    <Badge tone="urgent" icon={<WarningIcon weight="bold" />}>Out of Authority</Badge>
   );
 }
 
 function DecisionBadge({ row }: { row: RequestRowViewModel }) {
   return row.requestStatus === REQUEST_APPROVED ? (
-    <Badge tone="success" icon="✓">Approved</Badge>
+    <Badge tone="success" icon={<CheckIcon weight="bold" />}>Approved</Badge>
   ) : (
-    <Badge tone="error" icon="✗">Rejected</Badge>
+    <Badge tone="error" icon={<XIcon weight="bold" />}>Rejected</Badge>
   );
 }
 
@@ -70,26 +71,6 @@ function AuthorizedByCell({ row }: { row: RequestRowViewModel }) {
   );
 }
 
-function LockIcon() {
-  return (
-    <svg
-      className="review-btn-icon"
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <rect x="4" y="11" width="16" height="10" rx="2" />
-      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
-    </svg>
-  );
-}
-
 function ReviewButton({ row, onReview }: { row: RequestRowViewModel; onReview: (row: RequestRowViewModel) => void }) {
   // Locked rows still open the modal (read-only) so the recorded decision and its comment can be seen.
   const locked = row.decisionLocked;
@@ -98,15 +79,18 @@ function ReviewButton({ row, onReview }: { row: RequestRowViewModel; onReview: (
       type="button"
       className={cx('review-btn', locked && 'review-btn-secondary')}
       onClick={() => onReview(row)}
-      title={locked ? 'Decision recorded — view details' : undefined}
+      title={locked ? 'Decision recorded. View details' : undefined}
     >
       {locked ? (
         <>
-          <LockIcon />
+          <LockSimpleIcon className="review-btn-icon" aria-hidden="true" />
           View
         </>
       ) : (
-        'Review'
+        <>
+          <EyeIcon className="review-btn-icon" aria-hidden="true" />
+          Review
+        </>
       )}
     </button>
   );

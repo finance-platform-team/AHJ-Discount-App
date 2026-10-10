@@ -1,4 +1,5 @@
-import { cx } from '../lib/classNames';
+import { CheckCircleIcon, ShieldWarningIcon, StackIcon, XCircleIcon } from '@phosphor-icons/react';
+import { StatCards } from './StatCards';
 
 interface KpiCardsProps {
   total: number;
@@ -8,28 +9,22 @@ interface KpiCardsProps {
 }
 
 export function KpiCards({ total, outOfYourAuthority, approved, rejected }: KpiCardsProps) {
-  const cards = [
-    { label: 'Total Requests', value: total, caption: 'from DotCare today' },
-    {
-      label: 'Out of Your Authority',
-      value: outOfYourAuthority,
-      caption: outOfYourAuthority > 0 ? 'need your review — exceed your limit' : 'nothing exceeds your limit',
-      // The one number on this screen that asks the viewer to act, so it is the only one that stands out.
-      alert: outOfYourAuthority > 0,
-    },
-    { label: 'Approved', value: approved, caption: 'approved by default' },
-    { label: 'Rejected', value: rejected, caption: 'rejected with justification' },
-  ];
-
   return (
-    <div className="kpi-row">
-      {cards.map((card) => (
-        <div className={cx('kpi-card', card.alert && 'kpi-card-alert')} key={card.label}>
-          <div className="kpi-label">{card.label}</div>
-          <div className="kpi-value">{card.value}</div>
-          <div className="kpi-caption">{card.caption}</div>
-        </div>
-      ))}
-    </div>
+    <StatCards
+      cards={[
+        { label: 'Total Requests', value: total, caption: 'Received from DotCare', icon: <StackIcon />, tone: 'dark' },
+        {
+          label: 'Out of Your Authority',
+          value: outOfYourAuthority,
+          of: total,
+          caption: outOfYourAuthority > 0 ? 'Exceed your limit and need your review' : 'Nothing exceeds your limit',
+          icon: <ShieldWarningIcon />,
+          // The one number on this screen that asks the viewer to act, so it is the only one that stands out.
+          tone: outOfYourAuthority > 0 ? 'accent' : 'plain',
+        },
+        { label: 'Approved', value: approved, of: total, caption: 'Approved by default', icon: <CheckCircleIcon /> },
+        { label: 'Rejected', value: rejected, of: total, caption: 'Rejected with justification', icon: <XCircleIcon /> },
+      ]}
+    />
   );
 }

@@ -1,8 +1,10 @@
+import type { ReactNode } from 'react';
+
 interface BadgeProps {
-  /** Clinical/workflow status tones from the HMIS design system (§3.6) */
+  /** Workflow status tones */
   tone: 'success' | 'urgent' | 'error' | 'pending' | 'awaiting';
-  icon?: string;
-  children: React.ReactNode;
+  icon?: ReactNode;
+  children: ReactNode;
 }
 
 export function Badge({ tone, icon, children }: BadgeProps) {

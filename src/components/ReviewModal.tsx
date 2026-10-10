@@ -1,4 +1,16 @@
 import { useState, type ReactNode } from 'react';
+import {
+  CheckCircleIcon,
+  CheckIcon,
+  ClockIcon,
+  CurrencyCircleDollarIcon,
+  FileTextIcon,
+  HashIcon,
+  PencilSimpleIcon,
+  UserIcon,
+  WarningIcon,
+  XIcon,
+} from '@phosphor-icons/react';
 import type { RequestRowViewModel } from '../lib/rowViewModel';
 import { REQUEST_REJECTED } from '../lib/optionSets';
 import { cx } from '../lib/classNames';
@@ -11,28 +23,24 @@ interface ReviewModalProps {
   onLeaveApproved: () => Promise<void>;
 }
 
-/** 24×24 outline icon paths used throughout the dialog. */
-const ICON_PATHS = {
-  hash: 'M7 20l4-16m2 16l4-16M6 9h14M4 15h14',
-  document:
-    'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
-  close: 'M6 18L18 6M6 6l12 12',
-  user: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
-  currency:
-    'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
-  warning:
-    'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z',
-  pencil:
-    'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z',
-  checkCircle: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
-  clock: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
+/** Icons used throughout the dialog. */
+const ICONS = {
+  hash: HashIcon,
+  document: FileTextIcon,
+  close: XIcon,
+  user: UserIcon,
+  currency: CurrencyCircleDollarIcon,
+  warning: WarningIcon,
+  pencil: PencilSimpleIcon,
+  checkCircle: CheckCircleIcon,
+  clock: ClockIcon,
 } as const;
 
 type PillTone = 'neutral' | 'success' | 'danger' | 'pending';
 
 /** Evaluation flags a reviewer should see before deciding, in display order. */
 const EXCEPTION_MESSAGES: [flag: keyof RequestRowViewModel['evaluation'], message: string][] = [
-  ['unmatchedEmployee', 'Authorizer name has no system user match — defaulted to PA position and its limit.'],
+  ['unmatchedEmployee', 'Authorizer name has no system user match. Defaulted to the PA position and its limit.'],
   ['ambiguousEmployee', 'Authorizer name matched more than one system user.'],
   ['unmatchedService', 'Service could not be matched to a service category.'],
   ['unmatchedAgent', 'Entering agent has no system user match.'],
@@ -79,7 +87,7 @@ export function ReviewModal({ row, onCancel, onReject, onLeaveApproved }: Review
   const limitAmount = row.authorizedLimit != null ? (row.billTotal * row.authorizedLimit) / 100 : undefined;
   const netPayable = row.billTotal - row.totalDiscountAmount;
   const exceptions = EXCEPTION_MESSAGES.filter(([flag]) => row.evaluation[flag]).map(([, message]) => message);
-  const serviceLabel = [row.serviceCategory, row.serviceName].filter(Boolean).join(' — ') || '—';
+  const serviceLabel = [row.serviceCategory, row.serviceName].filter(Boolean).join(' / ') || '-';
 
   return (
     <div className="modal-overlay" onClick={onCancel}>
@@ -132,16 +140,16 @@ export function ReviewModal({ row, onCancel, onReject, onLeaveApproved }: Review
               <div className="rm-patient-id">
                 <div className="rm-avatar">{initials(row.patientName)}</div>
                 <div>
-                  <div className="rm-patient-name">{row.patientName || '—'}</div>
+                  <div className="rm-patient-name">{row.patientName || '-'}</div>
                   <div className="rm-mono rm-muted">
-                    Patient ID: <strong>{row.patientId || '—'}</strong>
+                    Patient ID: <strong>{row.patientId || '-'}</strong>
                   </div>
                 </div>
               </div>
               <div className="rm-patient-meta">
-                <Meta label="Visit ID" value={<span className="rm-mono">{row.visitId || '—'}</span>} />
-                <Meta label="Service Level" value={row.serviceLevel || '—'} />
-                <Meta label="Time Block" value={<span className="rm-chip">{row.timeBlock || '—'}</span>} />
+                <Meta label="Visit ID" value={<span className="rm-mono">{row.visitId || '-'}</span>} />
+                <Meta label="Service Level" value={row.serviceLevel || '-'} />
+                <Meta label="Time Block" value={<span className="rm-chip">{row.timeBlock || '-'}</span>} />
               </div>
             </div>
             <div className="rm-service-strip">
@@ -176,7 +184,7 @@ export function ReviewModal({ row, onCancel, onReject, onLeaveApproved }: Review
               <div className={cx('rm-stat', !!row.overageAboveAuthority && 'rm-stat-danger')}>
                 <div className="rm-stat-label">Authorized Limit</div>
                 <div className="rm-stat-value">
-                  {limitAmount != null ? `${row.authorizedLimit}%` : '—'}
+                  {limitAmount != null ? `${row.authorizedLimit}%` : '-'}
                   {limitAmount != null && <span className="rm-stat-unit">({formatAmount(limitAmount)} max)</span>}
                 </div>
                 <div className="rm-stat-note">
@@ -213,8 +221,8 @@ export function ReviewModal({ row, onCancel, onReject, onLeaveApproved }: Review
                   <Icon name="pencil" />
                   Origin &amp; Submission
                 </div>
-                <Meta label="Authorized By" value={<strong>{row.authorizedByDisplay || '—'}</strong>} />
-                <Meta label="Entered By" value={row.agentName || '—'} />
+                <Meta label="Authorized By" value={<strong>{row.authorizedByDisplay || '-'}</strong>} />
+                <Meta label="Entered By" value={row.agentName || '-'} />
                 <Meta label="Created On" value={<span className="rm-mono">{formatDateTime(row.actualCreatedOn)}</span>} />
               </div>
 
@@ -225,7 +233,7 @@ export function ReviewModal({ row, onCancel, onReject, onLeaveApproved }: Review
                     Final Determination
                   </div>
                   <Meta label="Decision" value={<strong>{decisionLabel}</strong>} />
-                  <Meta label="Decided By" value={<strong>{row.decidedByName || '—'}</strong>} />
+                  <Meta label="Decided By" value={<strong>{row.decidedByName || '-'}</strong>} />
                   <Meta label="Decision Date" value={<span className="rm-mono">{formatDateTime(row.decisionDate)}</span>} />
                 </div>
               ) : (
@@ -255,7 +263,7 @@ export function ReviewModal({ row, onCancel, onReject, onLeaveApproved }: Review
                 <textarea
                   id="rm-justification"
                   className={cx('modal-textarea', rejectAttempted && !!error && 'modal-textarea-invalid')}
-                  placeholder="Required only if you reject this request…"
+                  placeholder="Required only if you reject this request"
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   disabled={busy}
@@ -272,7 +280,7 @@ export function ReviewModal({ row, onCancel, onReject, onLeaveApproved }: Review
             {locked
               ? 'Decision locked'
               : readOnly
-                ? 'View only — awaiting the Authorized By’s decision'
+                ? 'View only. Awaiting the Authorized By’s decision'
                 : 'Awaiting your decision'}
           </div>
           <div className="modal-actions">
@@ -286,10 +294,12 @@ export function ReviewModal({ row, onCancel, onReject, onLeaveApproved }: Review
                   Cancel
                 </button>
                 <button type="button" className="modal-btn modal-btn-reject" onClick={handleReject} disabled={busy}>
-                  ✗ Reject
+                  <XIcon weight="bold" aria-hidden="true" />
+                  Reject
                 </button>
                 <button type="button" className="modal-btn modal-btn-approve" onClick={handleLeaveApproved} disabled={busy}>
-                  ✓ Leave Approved
+                  <CheckIcon weight="bold" aria-hidden="true" />
+                  Leave Approved
                 </button>
               </>
             )}
@@ -306,7 +316,7 @@ function AuthorityGauge({ requested, limit, over }: { requested: number; limit?:
       <div className="rm-gauge">
         <div className="rm-gauge-row">
           <span>Authority Consumption</span>
-          <span className="rm-muted">No matching matrix rule — no authority limit applies</span>
+          <span className="rm-muted">No matching matrix rule, so no authority limit applies</span>
         </div>
       </div>
     );
@@ -364,12 +374,9 @@ function Remark({ label, text }: { label: string; text: string }) {
   );
 }
 
-function Icon({ name }: { name: keyof typeof ICON_PATHS }) {
-  return (
-    <svg className="rm-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-      <path d={ICON_PATHS[name]} strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
-    </svg>
-  );
+function Icon({ name }: { name: keyof typeof ICONS }) {
+  const Glyph = ICONS[name];
+  return <Glyph className="rm-icon" aria-hidden="true" />;
 }
 
 /** First and last initials of a name ("Ahmed Ali Hassan" → "AH"). */

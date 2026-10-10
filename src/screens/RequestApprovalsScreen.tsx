@@ -27,7 +27,7 @@ const requestDevActions = (currentUser: CurrentUser | null): DevDataAction[] => 
     busyLabel: 'Deleting…',
     doneLabel: 'Deleted',
     confirm:
-      'Permanently delete ALL discount requests from Dataverse — including decided and locked ones?\n\n' +
+      'Permanently delete ALL discount requests from Dataverse, including decided and locked ones?\n\n' +
       'This cannot be undone.',
     run: deleteAllDiscountRequests,
   },
@@ -101,10 +101,7 @@ export function RequestApprovalsScreen({
   return (
     <div className="screen">
       <div className="screen-body">
-        <div className="page-header">
-          <p>Discount requests entered in DotCare, classified against the AHJ Discount Policy.</p>
-          <DevDataActions actions={devActions} onDone={load} />
-        </div>
+        <DevDataActions actions={devActions} onDone={load} />
 
         {loadError && <div className="load-error">{loadError}</div>}
         {!loading && !currentUser && !isMockMode() && (

@@ -41,18 +41,18 @@ export function DevDataActions({ actions, onDone }: DevDataActionsProps) {
   }
 
   return (
-    <>
+    <div className="dev-actions" hidden={actions.length === 0}>
       {actions.map((action) => (
-        <button key={action.label} type="button" onClick={() => run(action)} disabled={running != null}>
+        <button key={action.label} type="button" className="dev-btn" onClick={() => run(action)} disabled={running != null}>
           {running === action ? action.busyLabel : action.label}
         </button>
       ))}
       {result && (
-        <p>
+        <p className="dev-result">
           {result.action.doneLabel} {result.progress.done}/{result.progress.total}
-          {result.progress.failed.length > 0 && ` — ${result.progress.failed.length} failed`}
+          {result.progress.failed.length > 0 && `, ${result.progress.failed.length} failed`}
         </p>
       )}
-    </>
+    </div>
   );
 }

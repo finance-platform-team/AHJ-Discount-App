@@ -11,7 +11,7 @@ export function formatDateTimeShort(iso: string): string {
   return date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 }
 
-/** Full locale date/time for detail views; `'—'` when missing. */
+/** Full locale date/time for detail views; `'-'` when missing. */
 export function formatDateTime(iso: string): string {
-  return iso ? new Date(iso).toLocaleString() : '—';
+  return iso ? new Date(iso).toLocaleString() : '-';
 }

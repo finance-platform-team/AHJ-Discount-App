@@ -1,3 +1,4 @@
+import { CheckIcon, WarningIcon, XIcon } from '@phosphor-icons/react';
 import { Badge } from './Badge';
 import { formatDateTimeShort } from '../lib/format';
 import { REQUEST_REJECTED } from '../lib/optionSets';
@@ -28,7 +29,7 @@ const COLUMNS: { label: string; className?: string }[] = [
 
 const SKELETON_ROWS = 4;
 
-const EMPTY_CELL = <span className="cell-muted">—</span>;
+const EMPTY_CELL = <span className="cell-empty">-</span>;
 
 function DecisionRow({ row }: { row: RequestRowViewModel }) {
   const overage = overagePercent(row);
@@ -44,15 +45,15 @@ function DecisionRow({ row }: { row: RequestRowViewModel }) {
       <td className={overage > 0 ? 'num cell-overage' : 'num'}>{overage > 0 ? `${overage}%` : EMPTY_CELL}</td>
       <td>
         {row.requestStatus === REQUEST_REJECTED ? (
-          <Badge tone="error" icon="✗">Rejected</Badge>
+          <Badge tone="error" icon={<XIcon weight="bold" />}>Rejected</Badge>
         ) : (
-          <Badge tone="success" icon="✓">Approved</Badge>
+          <Badge tone="success" icon={<CheckIcon weight="bold" />}>Approved</Badge>
         )}
       </td>
       <td>{row.decidedByName || EMPTY_CELL}</td>
       <td>{row.decidedByRole || EMPTY_CELL}</td>
       <td className="cell-wrap">{row.decisionComment || EMPTY_CELL}</td>
-      <td>{row.isOutOfAuthority ? <Badge tone="urgent">Violation</Badge> : EMPTY_CELL}</td>
+      <td>{row.isOutOfAuthority ? <Badge tone="urgent" icon={<WarningIcon weight="bold" />}>Violation</Badge> : EMPTY_CELL}</td>
       <td className="cell-muted">{formatDateTimeShort(row.decisionDate)}</td>
     </tr>
   );

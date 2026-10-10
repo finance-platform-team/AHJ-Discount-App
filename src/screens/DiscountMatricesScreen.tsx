@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { BookOpenTextIcon, IdentificationBadgeIcon, InfinityIcon, ProhibitIcon, TableIcon } from '@phosphor-icons/react';
 import { fetchMatrixRows } from '../lib/dataSync';
 import type { MatrixRowLite } from '../lib/types';
 import {
@@ -29,11 +30,29 @@ const MATRIX_DEV_ACTIONS: DevDataAction[] = !import.meta.env.DEV ? [] : [
   },
 ];
 
-function cellValue(row: MatrixRowLite | undefined): string {
-  if (!row) return '';
-  if (row.dis_isunlimited) return '∞';
-  if (!row.dis_hasauthority) return '–';
-  return `${row.dis_authorizedlimitpercent ?? 0}%`;
+function MatrixCell({ row }: { row: MatrixRowLite | undefined }) {
+  if (!row) return null;
+  if (row.dis_isunlimited) {
+    return (
+      <span className="mx-cell mx-unlimited" title="Unlimited">
+        <InfinityIcon weight="bold" aria-label="Unlimited" />
+      </span>
+    );
+  }
+  if (!row.dis_hasauthority) {
+    return (
+      <span className="mx-cell mx-none" title="Not authorized, must escalate">
+        <ProhibitIcon aria-label="Not authorized" />
+      </span>
+    );
+  }
+  const pct = row.dis_authorizedlimitpercent ?? 0;
+  // Tint grows with the limit so high-authority cells stand out when scanning the matrix.
+  return (
+    <span className="mx-cell mx-pct" style={{ ['--heat' as string]: `${Math.min(pct, 100)}%` }}>
+      {pct}%
+    </span>
+  );
 }
 
 /** Rows sharing a level/time block/category form one table row, one cell per position. */
@@ -62,8 +81,7 @@ function buildBaseRuleText(rows: MatrixRowLite[]): string {
   const windowLabels = Object.values(TIME_BLOCK).filter((l) => l !== 'Not Time-Restricted');
   return (
     `Default PA limit is ${defaultPct}% unless overridden. ` +
-    `Block-time exceptions apply during ${windowLabels.join(', ')} for the relevant Service Categories. ` +
-    `Legend: ∞ = unlimited, "–" = not authorized, must escalate.`
+    `Block-time exceptions apply during ${windowLabels.join(', ')} for the relevant Service Categories.`
   );
 }
 
@@ -100,70 +118,117 @@ export function DiscountMatricesScreen({ canManageData }: DiscountMatricesScreen
   return (
     <div className="screen">
       <div className="screen-body">
-        <div className="page-header">
-          <p>AHJ Discount Policy (transcribed from the source policy document).</p>
+        <div className="mx-top">
+          <section className="panel panel-dark">
+            <header className="panel-head">
+              <span className="panel-icon">
+                <BookOpenTextIcon />
+              </span>
+              <h2 className="panel-title">Base rule &amp; overrides</h2>
+            </header>
+            <p className="panel-lead">{baseRuleText}</p>
+          </section>
+
+          <section className="panel">
+            <header className="panel-head">
+              <span className="panel-icon">
+                <IdentificationBadgeIcon />
+              </span>
+              <h2 className="panel-title">Role key</h2>
+            </header>
+            <div className="role-key-row">
+              {POSITION_ENTRIES.map((p) => (
+                <div key={p.code} className="role-key-item">
+                  <span className="role-key-abbr">{p.abbr}</span>
+                  <span className="role-key-name">{p.fullName}</span>
+                </div>
+              ))}
+            </div>
+          </section>
         </div>
 
-        <div className="info-card">
-          <h3>Base rule &amp; overrides</h3>
-          <p>{baseRuleText}</p>
-        </div>
-
-        <div className="info-card">
-          <h3>Role key</h3>
-          <div className="role-key-row">
-            {POSITION_ENTRIES.map((p) => (
-              <div key={p.code} className="role-key-item">
-                <strong>{p.abbr}</strong> – {p.fullName}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="info-card">
-          <h3>Discount Limit Matrix</h3>
+        <section className="table-card">
+          <header className="table-card-head">
+            <div className="panel-head">
+              <span className="panel-icon">
+                <TableIcon />
+              </span>
+              <h2 className="panel-title">Discount Limit Matrix</h2>
+            </div>
+            <div className="mx-legend" aria-label="Legend">
+              <span className="mx-legend-item">
+                <span className="mx-cell mx-unlimited">
+                  <InfinityIcon weight="bold" aria-hidden="true" />
+                </span>
+                Unlimited
+              </span>
+              <span className="mx-legend-item">
+                <span className="mx-cell mx-none">
+                  <ProhibitIcon aria-hidden="true" />
+                </span>
+                Not authorized, must escalate
+              </span>
+              <span className="mx-legend-item">
+                <span className="mx-cell mx-pct" style={{ ['--heat' as string]: '60%' }}>%</span>
+                Limit, tinted by size
+              </span>
+            </div>
+          </header>
           <DevDataActions actions={canManageData ? MATRIX_DEV_ACTIONS : []} onDone={reloadRows} />
-          {loading ? (
-            <div className="loading">Loading matrix…</div>
-          ) : (
-            <div className="grid-wrapper">
-              <table className="grid matrix-table">
-                <thead>
-                  <tr>
-                    <th>Service Level</th>
-                    <th>Time Block</th>
-                    <th>Service Category</th>
-                    {POSITION_ENTRIES.map((p) => (
-                      <th key={p.code}>{p.abbr}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {groupedRows.map((group) => {
+          <div className="grid-wrapper">
+            <table className="grid matrix-table">
+              <caption className="visually-hidden">Discount limit matrix by position</caption>
+              <thead>
+                <tr>
+                  <th>Service Level</th>
+                  <th>Time Block</th>
+                  <th>Service Category</th>
+                  {POSITION_ENTRIES.map((p) => (
+                    <th key={p.code} className="mx-col" title={p.fullName}>
+                      {p.abbr}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {loading &&
+                  Array.from({ length: 6 }, (_, i) => (
+                    <tr key={`skeleton-${i}`} className="row-skeleton" aria-hidden="true">
+                      {Array.from({ length: 3 + POSITION_ENTRIES.length }, (_, j) => (
+                        <td key={j}>
+                          <span className="skeleton-bar" />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                {!loading &&
+                  groupedRows.map((group) => {
                     const first = group[0];
                     return (
                       <tr key={groupKey(first)}>
-                        <td>{serviceLevelLabel(first.dis_servicelevel)}</td>
+                        <td className="cell-strong">{serviceLevelLabel(first.dis_servicelevel)}</td>
                         <td>{timeBlockLabel(first.dis_timeblock)}</td>
                         <td>{serviceCategoryLabel(first.dis_servicecategory)}</td>
                         {POSITION_ENTRIES.map((p) => (
-                          <td key={p.code}>{cellValue(group.find((r) => r.dis_position === p.code))}</td>
+                          <td key={p.code} className="mx-col">
+                            <MatrixCell row={group.find((r) => r.dis_position === p.code)} />
+                          </td>
                         ))}
                       </tr>
                     );
                   })}
-                  {groupedRows.length === 0 && (
-                    <tr>
-                      <td colSpan={3 + POSITION_ENTRIES.length} className="grid-empty">
-                        No matrix rows found.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+                {!loading && groupedRows.length === 0 && (
+                  <tr>
+                    <td colSpan={3 + POSITION_ENTRIES.length} className="grid-empty">
+                      <div className="grid-empty-title">No matrix rows found</div>
+                      <div>The discount policy has not been entered in Dataverse yet.</div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
     </div>
   );
