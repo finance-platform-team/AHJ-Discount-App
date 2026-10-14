@@ -2,68 +2,74 @@
 
 /* ---------------------------------------------------------------------- */
 /* Tokens                                                                  */
-/* Visual language inspired by "Design4": sage-grey canvas, soft frame,     */
-/* charcoal rail and lime as the single accent.                             */
+/* Colors follow the Synapse / HMIS Design System (see                      */
+/* "HMIS Design System — Guidelines.md" §3): teal system lane, neutral      */
+/* slate scale, soft teal accent, clinical status tones.               */
 /* Shape rule: surfaces are 28px (outer) / 20px (inner), every interactive  */
 /* control and chip is a full pill.                                         */
 /* ---------------------------------------------------------------------- */
 :root {
   color-scheme: light;
 
-  --canvas: #d9ddd6;
-  --frame: #f1f2ee;
+  /* Surfaces (HMIS surface + neutral scale) */
+  --canvas: #f1f5f9;
+  --frame: #f5f7f6;
   --surface: #ffffff;
-  --surface-2: #e9ebe6;
-  --surface-3: #dfe2dc;
+  --surface-2: #f1f5f9;
+  --surface-3: #e2e8f0;
 
-  --ink: #171916;
-  --ink-2: #565b55;
-  --ink-3: #868b84;
-  --line: rgba(23, 25, 22, 0.08);
-  --line-strong: rgba(23, 25, 22, 0.16);
+  /* Text + borders (neutral 900/600/500, HMIS border tint) */
+  --ink: #0f172a;
+  --ink-2: #475569;
+  --ink-3: #64748b;
+  --line: rgba(26, 74, 66, 0.08);
+  --line-strong: rgba(26, 74, 66, 0.14);
 
-  /* Charcoal */
-  --deep: #1b1d1a;
-  --deep-2: #2a2c28;
-  --deep-bg: var(--deep);
-  --on-deep: #f3f4ef;
-  --on-deep-2: rgba(243, 244, 239, 0.56);
-  --on-deep-fill: rgba(243, 244, 239, 0.1);
+  /* Deep teal (HMIS navigation / primary-deep) */
+  --deep: #023635;
+  --deep-2: #064642;
+  --deep-bg:
+    radial-gradient(120% 60% at 0% 0%, rgba(130, 210, 186, 0.18), transparent 60%),
+    linear-gradient(180deg, #064642 0%, #023635 100%);
+  --on-deep: #ffffff;
+  --on-deep-2: rgba(255, 255, 255, 0.62);
+  --on-deep-fill: rgba(255, 255, 255, 0.1);
 
-  /* Lime */
-  --accent: #dcf174;
-  --accent-strong: #c9e44a;
-  --accent-soft: #eff7c6;
-  --on-accent: #1b1d1a;
-  --on-accent-2: rgba(27, 29, 26, 0.72);
-  --on-accent-line: rgba(27, 29, 26, 0.28);
+  /* Soft teal accent (HMIS primary 200 / 300 / soft) */
+  --accent: #b7e7d7;
+  --accent-strong: #82d2ba;
+  --accent-soft: #d9f8ec;
+  --on-accent: #023635;
+  --on-accent-2: rgba(2, 54, 53, 0.72);
+  --on-accent-line: rgba(2, 54, 53, 0.28);
   --on-accent-fill: rgba(255, 255, 255, 0.72);
 
-  --primary-bg: var(--deep);
-  --primary-ink: var(--on-deep);
+  /* Primary action = HMIS teal 600 */
+  --primary-bg: #126e5c;
+  --primary-ink: #ffffff;
 
-  /* Semantic states (status only, never decoration) */
-  --success: #2c7149;
-  --success-soft: #e0efe4;
-  --danger: #b3321f;
-  --danger-soft: #f8e1dc;
-  --danger-solid: #c8432c;
-  --urgent: #a8481a;
-  --urgent-soft: #fbe5d6;
-  --warning: #85600a;
-  --warning-soft: #f7ecc9;
-  --awaiting: #4e5a74;
-  --awaiting-soft: #e3e7ef;
+  /* Semantic states (HMIS clinical status tones; status only, never decoration) */
+  --success: #176148;
+  --success-soft: rgba(64, 255, 184, 0.2);
+  --danger: #a23e3e;
+  --danger-soft: #fef2f2;
+  --danger-solid: #a23e3e;
+  --urgent: #a23e3e;
+  --urgent-soft: rgba(255, 196, 196, 0.55);
+  --warning: #785e14;
+  --warning-soft: rgba(255, 226, 145, 0.46);
+  --awaiting: #6b4e82;
+  --awaiting-soft: rgba(226, 214, 240, 0.6);
 
   /* Opaque row tint so the sticky Action cell never shows scrolled content through it. */
-  --row-alert: #fcf1ee;
-  --row-alert-hover: #f9e7e2;
-  --row-hover: #f6f7f3;
+  --row-alert: #fef2f2;
+  --row-alert-hover: #fee2e2;
+  --row-hover: #eff8f4;
 
-  --focus: #1b1d1a;
-  --overlay: rgba(23, 25, 22, 0.42);
-  --shadow-soft: 0 1px 2px rgba(40, 46, 38, 0.05), 0 8px 24px rgba(40, 46, 38, 0.06);
-  --shadow-modal: 0 30px 80px rgba(30, 36, 28, 0.28);
+  --focus: #126e5c;
+  --overlay: rgba(3, 17, 15, 0.58);
+  --shadow-soft: 0 1px 2px rgba(82, 82, 100, 0.05), 0 8px 24px rgba(82, 82, 100, 0.08);
+  --shadow-modal: 0 30px 70px rgba(76, 73, 105, 0.19);
 
   --r-outer: 28px;
   --r-inner: 20px;
@@ -78,42 +84,48 @@
 .dark-mode {
   color-scheme: dark;
 
-  --canvas: #0b0c0b;
-  --frame: #131412;
-  --surface: #1b1d1a;
-  --surface-2: #242622;
-  --surface-3: #2e302c;
+  /* HMIS dark surfaces */
+  --canvas: #1c1d22;
+  --frame: #202126;
+  --surface: #23242a;
+  --surface-2: #2c3532;
+  --surface-3: #173a32;
 
-  --ink: #eceee8;
-  --ink-2: #a5aaa2;
-  --ink-3: #747971;
-  --line: rgba(236, 238, 232, 0.08);
-  --line-strong: rgba(236, 238, 232, 0.16);
+  --ink: #f1f5f3;
+  --ink-2: #b3bfbb;
+  --ink-3: rgba(179, 191, 187, 0.72);
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.14);
 
-  --deep: #0e0f0d;
-  --deep-2: #1f211d;
+  --deep: #03251f;
+  --deep-2: #073a33;
+  --deep-bg:
+    radial-gradient(120% 60% at 0% 0%, rgba(130, 210, 186, 0.1), transparent 60%),
+    linear-gradient(180deg, #073a33 0%, #03251f 100%);
 
-  --accent-soft: rgba(220, 241, 116, 0.14);
+  --accent-soft: rgba(183, 231, 215, 0.14);
 
-  --primary-bg: var(--accent);
-  --primary-ink: var(--on-accent);
+  /* HMIS dark primary-deep with dark text-inverse */
+  --primary-bg: #78d9bd;
+  --primary-ink: #062f2a;
 
-  --success: #7fcb9b;
-  --success-soft: rgba(127, 203, 155, 0.14);
-  --danger: #f0907e;
-  --danger-soft: rgba(240, 144, 126, 0.14);
-  --urgent: #f2a77a;
-  --urgent-soft: rgba(242, 167, 122, 0.14);
-  --warning: #e9c66d;
-  --warning-soft: rgba(233, 198, 109, 0.14);
-  --awaiting: #aab6d3;
-  --awaiting-soft: rgba(170, 182, 211, 0.14);
+  --success: #78d9bd;
+  --success-soft: rgba(64, 255, 184, 0.14);
+  --danger: #f0a3a3;
+  --danger-soft: rgba(239, 68, 68, 0.16);
+  --danger-solid: #a23e3e;
+  --urgent: #f0a3a3;
+  --urgent-soft: rgba(162, 62, 62, 0.28);
+  --warning: #fcd34d;
+  --warning-soft: rgba(201, 155, 59, 0.2);
+  --awaiting: #c5b3ee;
+  --awaiting-soft: rgba(141, 115, 222, 0.2);
 
-  --row-alert: #2a1f1c;
-  --row-alert-hover: #33241f;
-  --row-hover: #20221f;
+  --row-alert: #2e2226;
+  --row-alert-hover: #36262a;
+  --row-hover: #2c3532;
 
-  --focus: #dcf174;
+  --focus: #78d9bd;
   --overlay: rgba(0, 0, 0, 0.6);
   --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-modal: 0 30px 80px rgba(0, 0, 0, 0.6);
@@ -196,7 +208,7 @@ button:disabled {
 }
 
 /* ---------------------------------------------------------------------- */
-/* Sidebar (charcoal rail)                                                 */
+/* Sidebar (deep teal rail)                                                 */
 /* ---------------------------------------------------------------------- */
 .sidebar {
   position: sticky;
@@ -570,7 +582,7 @@ button:disabled {
   background: var(--accent);
 }
 
-/* Charcoal on a dark frame disappears, so the anchor card inverts to light in dark mode. */
+/* Deep teal on a dark frame disappears, so the anchor card inverts to light in dark mode. */
 .dark-mode .stat-card-dark {
   color: var(--deep);
   background: var(--ink);
@@ -583,7 +595,7 @@ button:disabled {
 
 .dark-mode .stat-card-dark .stat-caption,
 .dark-mode .stat-card-dark .stat-of {
-  color: rgba(14, 15, 13, 0.62);
+  color: var(--on-accent-2);
 }
 
 .stat-head {
